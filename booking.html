@@ -97,6 +97,7 @@
   <script>
     let userLineId = "";
     const LIFF_ID = "2012242488-OK0d3lhO";
+    const GAS_URL = "https://script.google.com/macros/s/XXXXXXXX/exec";
     const statusElem = document.getElementById('lineStatus');
 
     // ฟังก์ชันเริ่มระบบทำงานทันที ไม่ต้องรอหน้าเว็บโหลดเสร็จทั้งหมด
@@ -119,7 +120,10 @@
 
       try {
         // 2. เรียกใช้งาน LIFF
-        await liff.init({ liffId: LIFF_ID });
+        await Promise.race([
+    liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true }),
+    new Promise((_, rej) => setTimeout(() => rej(new Error("LIFF init timeout")), 10000))
+  ]);
         
         if (statusElem) statusElem.innerText = "2. กำลังตรวจสอบสิทธิ์...";
 
