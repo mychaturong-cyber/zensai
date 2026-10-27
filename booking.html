@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>จองคิวนวด - ZenSai Massage</title>
@@ -97,16 +96,31 @@
   <script>
     let userLineId = "";
     const LIFF_ID = "2012242488-OK0d3lhO";
-    const GAS_URL = "https://script.google.com/macros/s/XXXXXXXX/exec";
-    const statusElem = document.getElementById('lineStatus');
 
-    // ฟังก์ชันเริ่มระบบทำงานทันที ไม่ต้องรอหน้าเว็บโหลดเสร็จทั้งหมด
+    // ⚠️ เปลี่ยนเป็น Web app URL จริงของคุณ (Deploy → Manage deployments → คัดลอก URL ที่ลงท้าย /exec)
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzGYGDZ9U1p-C6fhe0xOBfk2Kd2uC1qpuZTYIqtyW0Fg2zHU_-hNtagqy3VfTC_7IYmIg/exec";
+
+    const statusElem = document.getElementById('lineStatus');
+    const BTN_TEXT = "ยืนยันการจองคิว";
+
+    function todayStr() {
+      // ใช้วันที่ตามเวลาเครื่อง (ไม่ใช่ UTC) กันวันที่เพี้ยนตอนเช้ามืดในไทย
+      const d = new Date();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return d.getFullYear() + '-' + mm + '-' + dd;
+    }
+
+    function resetButton() {
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = false;
+      btn.innerText = BTN_TEXT;
+    }
+
     async function initApp() {
       // 1. ตั้งวันที่
       const dateInput = document.getElementById('date');
-      if (dateInput) {
-        dateInput.value = new Date().toISOString().split('T')[0];
-      }
+      if (dateInput) dateInput.value = todayStr();
 
       if (statusElem) statusElem.innerText = "1. กำลังเชื่อมต่อ LIFF...";
 
@@ -119,12 +133,12 @@
       }
 
       try {
-        // 2. เรียกใช้งาน LIFF
+        // 2. เรียกใช้งาน LIFF (มี timeout กันค้างเงียบ)
         await Promise.race([
-    liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true }),
-    new Promise((_, rej) => setTimeout(() => rej(new Error("LIFF init timeout")), 10000))
-  ]);
-        
+          liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true }),
+          new Promise((_, rej) => setTimeout(() => rej(new Error("LIFF init timeout")), 10000))
+        ]);
+
         if (statusElem) statusElem.innerText = "2. กำลังตรวจสอบสิทธิ์...";
 
         if (liff.isLoggedIn()) {
@@ -156,22 +170,26 @@
       }
     }
 
-    // เรียกฟังก์ชันสตาร์ทระบบทันที!
     initApp();
 
     async function handleFormSubmit(e) {
       e.preventDefault();
-      
+
       const btn = document.getElementById('submitBtn');
+
+      // เช็กว่าใส่ GAS_URL จริงแล้วหรือยัง
+      if (GAS_URL.indexOf("XXXXXXXX") !== -1) {
+        alert("ยังไม่ได้ตั้งค่า GAS_URL ในไฟล์ booking.html");
+        return;
+      }
+
       btn.disabled = true;
       btn.innerText = "กำลังบันทึกการจอง...";
 
       if (!userLineId && typeof liff !== 'undefined' && liff.isLoggedIn()) {
         try {
           const profile = await liff.getProfile();
-          if (profile && profile.userId) {
-            userLineId = profile.userId;
-          }
+          if (profile && profile.userId) userLineId = profile.userId;
         } catch (err) {}
       }
 
@@ -182,7 +200,7 @@
       const [h, m] = startVal.split(':').map(Number);
       const addedMinutes = Math.round((durationVal % 1) * 60);
       const totalMinutes = m + addedMinutes;
-      const endHour = h + Math.floor(durationVal) + Math.floor(totalMinutes / 60);
+      const endHour = (h + Math.floor(durationVal) + Math.floor(totalMinutes / 60)) % 24;
       const endMin = totalMinutes % 60;
       const endTimeVal = String(endHour).padStart(2, '0') + ':' + String(endMin).padStart(2, '0');
 
@@ -197,23 +215,42 @@
         lineUserId: userLineId
       };
 
-      google.script.run
-        .withSuccessHandler(res => {
-          if (res.success) {
-            document.getElementById('modalBookingId').innerText = res.bookingId;
-            document.getElementById('successModal').classList.remove('hidden');
-          } else {
-            alert("เกิดข้อผิดพลาด: " + res.error);
-            btn.disabled = false;
-            btn.innerText = "ยืนยันการจองคิว";
-          }
-        })
-        .withFailureHandler(err => {
-          alert("ระบบขัดข้อง: " + err.message);
-          btn.disabled = false;
-          btn.innerText = "ยืนยันการจองคิว";
-        })
-        .saveBookingFromLiff(payload);
+      // ส่งข้อมูลไป Google Apps Script (doPost) — timeout 30 วินาที
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 30000);
+
+      try {
+        const r = await fetch(GAS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
+        clearTimeout(timer);
+
+        const text = await r.text();
+        let res;
+        try {
+          res = JSON.parse(text);
+        } catch (parseErr) {
+          console.error("Response ไม่ใช่ JSON:", text);
+          throw new Error("เซิร์ฟเวอร์ตอบกลับผิดรูปแบบ (เช็กว่า Deploy เป็น Anyone และเพิ่ม doPost แล้ว)");
+        }
+
+        if (res.success) {
+          document.getElementById('modalBookingId').innerText = res.bookingId;
+          document.getElementById('successModal').classList.remove('hidden');
+        } else {
+          alert("เกิดข้อผิดพลาด: " + res.error);
+          resetButton();
+        }
+      } catch (err) {
+        clearTimeout(timer);
+        console.error("Submit Error:", err);
+        const msg = err.name === "AbortError" ? "หมดเวลาเชื่อมต่อ กรุณาลองใหม่" : err.message;
+        alert("ระบบขัดข้อง: " + msg);
+        resetButton();
+      }
     }
 
     function closeModalAndExit() {
@@ -222,12 +259,8 @@
       const form = document.getElementById('bookingForm');
       if (form) form.reset();
       const dateInput = document.getElementById('date');
-      if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
-      const btn = document.getElementById('submitBtn');
-      if (btn) {
-        btn.disabled = false;
-        btn.innerText = "ยืนยันการจองคิว";
-      }
+      if (dateInput) dateInput.value = todayStr();
+      resetButton();
       try {
         if (typeof liff !== 'undefined' && liff.isInClient()) liff.closeWindow();
       } catch (e) {}
