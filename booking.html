@@ -1,397 +1,199 @@
 <!DOCTYPE html>
-<html lang="th">
+<html>
 <head>
+  <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>จองคิวนวด - ZenSai Massage</title>
+  <title>จองคิวนวด - Zen-Sai Massage</title>
+  <!-- Tailwind CSS สำหรับจัดสไตล์ -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <!-- LINE LIFF SDK -->
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    html { -webkit-text-size-adjust: 100%; }
-    body {
-      margin: 0;
-      padding: 1rem;
-      min-height: 100vh;
-      background: #f9fafb;
-      color: #1f2937;
-      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Thai", "Sarabun", Tahoma, sans-serif;
-      line-height: 1.5;
-    }
-    .hidden { display: none !important; }
-
-    /* ---------- การ์ดหลัก ---------- */
-    .card {
-      max-width: 28rem;
-      margin: 0 auto;
-      background: #fff;
-      border: 1px solid #f3f4f6;
-      border-radius: 1rem;
-      padding: 1.5rem;
-      box-shadow: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1);
-    }
-    .head { text-align: center; margin-bottom: 1.5rem; }
-    .head h1 { margin: 0; font-size: 1.5rem; line-height: 2rem; font-weight: 700; color: #15803d; }
-    .head .sub { margin: .25rem 0 0; font-size: .75rem; color: #6b7280; }
-
-    /* ---------- แถบสถานะ LINE ---------- */
-    .status {
-      display: inline-block;
-      margin-top: .5rem;
-      padding: .25rem .75rem;
-      border-radius: 9999px;
-      font-size: .75rem;
-      color: #4b5563;
-      background: #f3f4f6;
-    }
-    .status.ok   { color: #16a34a; background: #f0fdf4; font-weight: 600; }
-    .status.warn { color: #d97706; background: #fffbeb; }
-    .status.bad  { color: #dc2626; background: #fef2f2; }
-
-    /* ---------- ฟอร์ม ---------- */
-    form > * + * { margin-top: 1rem; }
-    label { display: block; margin-bottom: .25rem; font-size: .875rem; font-weight: 500; }
-    .req { color: #ef4444; }
-    select, input {
-      display: block;
-      width: 100%;
-      padding: .75rem;
-      font: inherit;
-      font-size: .875rem;
-      color: inherit;
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      border-radius: .75rem;
-      outline: none;
-      appearance: none;
-      -webkit-appearance: none;
-      min-height: 2.9rem;
-    }
-    select {
-      padding-right: 2.25rem;
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
-      background-repeat: no-repeat;
-      background-position: right .75rem center;
-    }
-    select:invalid { color: #9ca3af; }
-    select option { color: #1f2937; }
-    input::placeholder { color: #9ca3af; }
-    select:focus, input:focus { border-color: #22c55e; box-shadow: 0 0 0 2px #22c55e; }
-    select.invalid, input.invalid { border-color: #ef4444; box-shadow: 0 0 0 1px #ef4444; }
-
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
-    .grid2 > * { min-width: 0; }
-    .grid2 > * + * { margin-top: 0; }
-
-    .err { margin: .25rem 0 0; font-size: .75rem; color: #dc2626; }
-
-    .btn {
-      display: block;
-      width: 100%;
-      margin-top: 1.5rem;
-      padding: .75rem;
-      font: inherit;
-      font-weight: 500;
-      color: #fff;
-      background: #15803d;
-      border: 0;
-      border-radius: .75rem;
-      cursor: pointer;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1);
-      transition: background-color .2s;
-    }
-    .btn:hover { background: #166534; }
-    .btn:disabled { opacity: .7; cursor: not-allowed; }
-
-    /* ---------- หน้าต่างจองสำเร็จ ---------- */
-    .overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 50;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
-      background: rgba(0,0,0,.5);
-    }
-    .modal {
-      width: 100%;
-      max-width: 24rem;
-      padding: 1.5rem;
-      text-align: center;
-      background: #fff;
-      border-radius: 1rem;
-      box-shadow: 0 25px 50px -12px rgba(0,0,0,.25);
-    }
-    .modal .icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 4rem;
-      height: 4rem;
-      margin: 0 auto 1rem;
-      color: #16a34a;
-      background: #dcfce7;
-      border-radius: 9999px;
-    }
-    .modal .icon svg { width: 2.5rem; height: 2.5rem; }
-    .modal h3 { margin: 0 0 .5rem; font-size: 1.25rem; line-height: 1.75rem; font-weight: 700; color: #1f2937; }
-    .modal .lead { margin: 0 0 .25rem; font-size: .875rem; color: #6b7280; }
-    .modal .code {
-      margin-bottom: 1.5rem;
-      padding: .5rem 1rem;
-      font-size: 1.5rem;
-      line-height: 2rem;
-      font-weight: 800;
-      letter-spacing: .025em;
-      color: #15803d;
-      background: #f0fdf4;
-      border-radius: .75rem;
-    }
-    .modal .btn { margin-top: 0; }
-  </style>
 </head>
-<body>
-  <div class="card">
-    <div class="head">
-      <h1>ZenSai Massage</h1>
-      <p class="sub">จองคิวนวดออนไลน์</p>
+<body class="bg-gray-50 text-gray-800 font-sans p-4 min-h-screen relative">
+  <div class="max-w-md mx-auto bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+    <div class="text-center mb-6">
+      <h1 class="text-2xl font-bold text-green-700">Zen-Sai Massage</h1>
+      <p class="text-xs text-gray-500 mt-1">จองคิวนวดออนไลน์</p>
       <!-- แถบแสดงสถานะการเชื่อมต่อ LINE -->
-      <div id="lineStatus" class="status">เตรียมระบบ...</div>
+      <div id="lineStatus" class="mt-2 text-xs text-gray-600 bg-gray-100 py-1 px-3 rounded-full inline-block">เตรียมระบบ...</div>
     </div>
 
-    <form id="bookingForm" onsubmit="handleFormSubmit(event)" novalidate>
+    <form id="bookingForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
       <!-- เลือกบริการ -->
       <div>
-        <label for="service">รายการบริการ <span class="req">*</span></label>
-        <select id="service" required>
-          <option value="" selected disabled>-- เลือกบริการ --</option>
+        <label class="block text-sm font-medium mb-1">รายการบริการ</label>
+        <select id="service" class="w-full border rounded-xl p-3 bg-gray-50 text-sm focus:ring-2 focus:ring-green-500 outline-none" required>
           <option value="นวดไทย">นวดไทย</option>
           <option value="นวดเท้า">นวดเท้า</option>
-          <option value="นวด คอ บ่า ไหล่">นวด คอ บ่า ไหล่</option>
+          <option value="นวดออยล์">นวดออยล์</option>
           <option value="นวดไทยออยล์">นวดไทยออยล์</option>
-          <option value="นวดอโรม่า">นวดอโรม่า</option>
-          <option value="นวดน้ำมันร้อน">นวดน้ำมันร้อน</option>
-          <option value="ขัดผิว">ขัดผิว</option>
-          <option value="นวดอโรม่า + ขัดผิว">นวดอโรม่า + ขัดผิว</option>
-          <option value="นวดไทยประคบสมุนไพร">นวดไทยประคบสมุนไพร</option>
-          <option value="นวดไทยออยล์ประคบสมุนไพร">นวดไทยออยล์ประคบสมุนไพร</option>
         </select>
-        <p class="err hidden" data-for="service">กรุณาเลือกรายการบริการ</p>
       </div>
 
       <!-- เลือกพนักงานนวด -->
       <div>
-        <label for="doctor">พนักงานนวด (หมอ) <span class="req">*</span></label>
-        <select id="doctor" required>
-          <option value="" selected disabled>-- เลือกพนักงานนวด --</option>
+        <label class="block text-sm font-medium mb-1">พนักงานนวด (หมอ)</label>
+        <select id="doctor" class="w-full border rounded-xl p-3 bg-gray-50 text-sm focus:ring-2 focus:ring-green-500 outline-none" required>
           <option value="พี่สุ">พี่สุ</option>
           <option value="พี่นุ่น">พี่นุ่น</option>
         </select>
-        <p class="err hidden" data-for="doctor">กรุณาเลือกพนักงานนวด</p>
       </div>
 
       <!-- เลือกจำนวนชั่วโมง -->
       <div>
-        <label for="duration">ระยะเวลา (ชั่วโมง) <span class="req">*</span></label>
-        <select id="duration" required>
-          <option value="" selected disabled>-- เลือกระยะเวลา --</option>
+        <label class="block text-sm font-medium mb-1">ระยะเวลา (ชั่วโมง)</label>
+        <select id="duration" class="w-full border rounded-xl p-3 bg-gray-50 text-sm focus:ring-2 focus:ring-green-500 outline-none" required>
           <option value="1">1 ชั่วโมง</option>
           <option value="1.5">1.5 ชั่วโมง</option>
           <option value="2">2 ชั่วโมง</option>
-          <option value="2.5">2.5 ชั่วโมง</option>
           <option value="3">3 ชั่วโมง</option>
         </select>
-        <p class="err hidden" data-for="duration">กรุณาเลือกระยะเวลา</p>
       </div>
 
       <!-- วันที่และเวลา -->
-      <div class="grid2">
+      <div class="grid grid-cols-2 gap-3">
         <div>
-          <label for="date">วันที่ <span class="req">*</span></label>
-          <input type="date" id="date" required>
-          <p class="err hidden" data-for="date">เลือกวันที่</p>
+          <label class="block text-sm font-medium mb-1">วันที่</label>
+          <input type="date" id="date" class="w-full border rounded-xl p-3 bg-gray-50 text-sm focus:ring-2 focus:ring-green-500 outline-none" required>
         </div>
         <div>
-          <label for="startTime">เวลาเริ่มต้น <span class="req">*</span></label>
-          <input type="time" id="startTime" required>
-          <p class="err hidden" data-for="startTime">เลือกเวลา</p>
+          <label class="block text-sm font-medium mb-1">เวลาเริ่มต้น</label>
+          <input type="time" id="startTime" class="w-full border rounded-xl p-3 bg-gray-50 text-sm focus:ring-2 focus:ring-green-500 outline-none" required>
         </div>
       </div>
 
-      <!-- ชื่อลูกค้า -->
+      <!-- ข้อมูลลูกค้า -->
       <div>
-        <label for="customerName">ชื่อ <span class="req">*</span></label>
-        <input type="text" id="customerName" placeholder="เช่น คุณสุขภาพดี" autocomplete="name" maxlength="60" required>
-        <p class="err hidden" data-for="customerName">กรุณากรอกชื่อ</p>
+        <label class="block text-sm font-medium mb-1">ชื่อ และ เบอร์โทรติดต่อ</label>
+        <input type="text" id="customerInfo" placeholder="เช่น คุณกบ 081-234-5678" class="w-full border rounded-xl p-3 bg-gray-50 text-sm focus:ring-2 focus:ring-green-500 outline-none" required>
       </div>
 
-      <!-- เบอร์โทร -->
-      <div>
-        <label for="customerPhone">เบอร์โทรติดต่อ <span class="req">*</span></label>
-        <input type="tel" id="customerPhone" placeholder="เช่น 081-234-5678" inputmode="tel" autocomplete="tel" maxlength="14" required>
-        <p class="err hidden" data-for="customerPhone">กรุณากรอกเบอร์โทรให้ถูกต้อง (เช่น 0812345678)</p>
-      </div>
-
-      <button type="submit" id="submitBtn" class="btn">ยืนยันการจองคิว</button>
+      <button type="submit" id="submitBtn" class="w-full bg-green-700 hover:bg-green-800 text-white font-medium py-3 rounded-xl shadow-md transition duration-200 mt-6">
+        ยืนยันการจองคิว
+      </button>
     </form>
   </div>
 
-  <!-- Success Modal -->
-  <div id="successModal" class="overlay hidden">
-    <div class="modal">
-      <div class="icon">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <!-- Modal จองสำเร็จ (สีเขียว) -->
+  <div id="successModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl p-6 text-center max-w-sm w-full shadow-2xl transform transition-all">
+      <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
       </div>
-      <h3>จองคิวสำเร็จ!</h3>
-      <p class="lead">รหัสการจองของคุณคือ</p>
-      <div id="modalBookingId" class="code">BK-XXXXXX</div>
-      <button class="btn" onclick="closeModalAndExit()">ตกลง</button>
+      <h3 class="text-xl font-bold text-gray-800 mb-2">จองคิวสำเร็จ!</h3>
+      <p class="text-gray-500 text-sm mb-1">รหัสการจองของคุณคือ</p>
+      <div id="modalBookingId" class="text-2xl font-extrabold text-green-700 bg-green-50 py-2 px-4 rounded-xl mb-6 tracking-wide">
+        BK-XXXXXX
+      </div>
+      <button onclick="closeModalAndExit()" class="w-full bg-green-700 hover:bg-green-800 text-white font-medium py-3 rounded-xl transition">
+        ตกลง
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal คิวทับซ้อน (สีแดง/ส้ม) -->
+  <div id="overlapModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl p-6 text-center max-w-sm w-full shadow-2xl transform transition-all">
+      <div class="w-16 h-16 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-3">
+        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+      <h3 class="text-lg font-bold text-gray-800 mb-1">คิวนี้ถูกจองแล้ว!</h3>
+      <p class="text-gray-600 text-sm mb-4">เวลาที่คุณเลือก <span id="overlapDoctorName" class="font-bold text-orange-600"></span> ติดคิวแล้วค่ะ กรุณาหลีกเลี่ยงช่วงเวลาดังต่อไปนี้:</p>
+      
+      <!-- ตารางแสดงคิวที่ไม่ว่าง -->
+      <div class="bg-orange-50 rounded-xl p-3 mb-5 max-h-40 overflow-y-auto border border-orange-100">
+        <ul id="overlapTimeList" class="text-sm text-gray-700 space-y-2">
+          <!-- โค้ดจะนำเวลาคิวมาแทรกตรงนี้ -->
+        </ul>
+      </div>
+
+      <button onclick="closeOverlapModal()" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-medium py-3 rounded-xl transition">
+        เลือกเวลาใหม่
+      </button>
     </div>
   </div>
 
   <script>
     let userLineId = "";
     const LIFF_ID = "2012242488-OK0d3lhO";
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzGYGDZ9U1p-C6fhe0xOBfk2Kd2uC1qpuZTYIqtyW0Fg2zHU_-hNtagqy3VfTC_7IYmIg/exec";
-
     const statusElem = document.getElementById('lineStatus');
-    const BTN_TEXT = "ยืนยันการจองคิว";
 
-    function setStatus(type, text) {
-      if (!statusElem) return;
-      statusElem.className = "status" + (type ? " " + type : "");
-      if (text !== undefined) statusElem.innerText = text;
-    }
-
-    function todayStr() {
-      const d = new Date();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      return d.getFullYear() + '-' + mm + '-' + dd;
-    }
-
-    function nowTimeStr() {
-      // เวลาปัจจุบันตามเครื่อง รูปแบบ HH:MM
-      const d = new Date();
-      return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-    }
-
-    function resetButton() {
-      const btn = document.getElementById('submitBtn');
-      btn.disabled = false;
-      btn.innerText = BTN_TEXT;
-    }
-
-    // ---------- ตรวจสอบข้อมูล ----------
-    function showError(id, show) {
-      const el = document.querySelector('.err[data-for="' + id + '"]');
-      const input = document.getElementById(id);
-      if (el) el.classList.toggle('hidden', !show);
-      if (input) input.classList.toggle('invalid', show);
-    }
-
-    function cleanPhone(v) {
-      return (v || '').replace(/\D/g, '');
-    }
-
-    function isValidPhone(digits) {
-      // เบอร์ไทย: ขึ้นต้น 0 ยาว 9-10 หลัก
-      return /^0\d{8,9}$/.test(digits);
-    }
-
-    function formatPhone(digits) {
-      if (digits.length === 10) return digits.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
-      if (digits.length === 9) return digits.replace(/(\d{2})(\d{3})(\d{4})/, '$1-$2-$3');
-      return digits;
-    }
-
-    function validateForm() {
-      let firstBad = null;
-      const check = (id, ok) => {
-        showError(id, !ok);
-        if (!ok && !firstBad) firstBad = document.getElementById(id);
-      };
-
-      check('service', !!document.getElementById('service').value);
-      check('doctor', !!document.getElementById('doctor').value);
-      check('duration', !!document.getElementById('duration').value);
-      check('date', !!document.getElementById('date').value);
-      check('startTime', !!document.getElementById('startTime').value);
-      check('customerName', document.getElementById('customerName').value.trim().length >= 2);
-      check('customerPhone', isValidPhone(cleanPhone(document.getElementById('customerPhone').value)));
-
-      if (firstBad) {
-        firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        try { firstBad.focus(); } catch (e) {}
-        return false;
-      }
-      return true;
-    }
-
-    // ล้างข้อความ error เมื่อผู้ใช้แก้ข้อมูล
-    ['service','doctor','duration','date','startTime','customerName','customerPhone'].forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      const evt = (el.tagName === 'SELECT' || el.type === 'date' || el.type === 'time') ? 'change' : 'input';
-      el.addEventListener(evt, () => showError(id, false));
-    });
-
-    // ---------- LIFF ----------
-    async function initApp() {
+    function initApp() {
       const dateInput = document.getElementById('date');
-      if (dateInput) dateInput.value = todayStr();
-      const timeInput = document.getElementById('startTime');
-      if (timeInput) timeInput.value = nowTimeStr();
-
-      setStatus("", "1. กำลังเชื่อมต่อ LIFF...");
+      if (dateInput) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+      }
+      if (statusElem) statusElem.innerText = "1. กำลังเชื่อมต่อ LIFF...";
 
       if (typeof liff === 'undefined') {
-        setStatus("bad", "ไม่พบระบบ LINE");
+        if (statusElem) {
+          statusElem.innerText = "ไม่พบระบบ LINE";
+          statusElem.className = "mt-2 text-xs text-red-600 bg-red-50 py-1 px-3 rounded-full inline-block";
+        }
         return;
       }
 
-      try {
-        await Promise.race([
-          liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true }),
-          new Promise((_, rej) => setTimeout(() => rej(new Error("LIFF init timeout")), 10000))
-        ]);
+      let isLiffFinished = false;
+      const fallbackTimer = setTimeout(() => {
+        if (!isLiffFinished && statusElem) {
+          statusElem.innerText = "⚠️ โหลดนานผิดปกติ (กรุณากดเปิดผ่านลิงก์ liff.line.me เท่านั้น)";
+          statusElem.className = "mt-2 text-xs text-red-600 bg-red-50 py-1 px-3 rounded-full inline-block";
+        }
+      }, 5000);
 
-        setStatus("", "2. กำลังตรวจสอบสิทธิ์...");
-
-        if (liff.isLoggedIn()) {
-          setStatus("", "3. กำลังดึงโปรไฟล์...");
-          const profile = await liff.getProfile();
+      liff.init({ liffId: LIFF_ID })
+        .then(() => {
+          isLiffFinished = true;
+          clearTimeout(fallbackTimer);
+          if (statusElem) statusElem.innerText = "2. กำลังตรวจสอบสิทธิ์...";
+          if (liff.isLoggedIn()) {
+            if (statusElem) statusElem.innerText = "3. กำลังดึงโปรไฟล์...";
+            return liff.getProfile();
+          } else {
+            if (liff.isInClient()) {
+              liff.login();
+            } else {
+              if (statusElem) {
+                statusElem.innerText = "โหมดเว็บทั่วไป (ไม่มี LINE ID)";
+                statusElem.className = "mt-2 text-xs text-amber-600 bg-amber-50 py-1 px-3 rounded-full inline-block";
+              }
+            }
+            return null;
+          }
+        })
+        .then(profile => {
           if (profile && profile.userId) {
             userLineId = profile.userId;
-            setStatus("ok", "✓ เชื่อมต่อ: " + profile.displayName);
+            if (statusElem) {
+              statusElem.innerText = "✓ เชื่อมต่อ: " + profile.displayName;
+              statusElem.className = "mt-2 text-xs font-semibold text-green-600 bg-green-50 py-1 px-3 rounded-full inline-block";
+            }
           }
-        } else {
-          if (liff.isInClient()) {
-            liff.login();
-          } else {
-            setStatus("warn", "โหมดเว็บทั่วไป (ไม่มี LINE ID)");
+        })
+        .catch(err => {
+          isLiffFinished = true;
+          clearTimeout(fallbackTimer);
+          console.error("LIFF Error:", err);
+          if (statusElem) {
+            statusElem.innerText = "LIFF Error: " + (err.message || err.toString());
+            statusElem.className = "mt-2 text-xs text-red-600 bg-red-50 py-1 px-3 rounded-full inline-block";
           }
-        }
-      } catch (err) {
-        console.error("LIFF Error:", err);
-        setStatus("bad", "Error: " + (err.message || err.toString()));
-      }
+        });
     }
 
     initApp();
 
-    // ---------- ส่งฟอร์ม ----------
     async function handleFormSubmit(e) {
       e.preventDefault();
-
-      if (!validateForm()) return;
-
+      
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
-      btn.innerText = "กำลังบันทึกการจอง...";
+      btn.innerText = "กำลังตรวจสอบคิว...";
 
       if (!userLineId && typeof liff !== 'undefined' && liff.isLoggedIn()) {
         try {
@@ -407,12 +209,9 @@
       const [h, m] = startVal.split(':').map(Number);
       const addedMinutes = Math.round((durationVal % 1) * 60);
       const totalMinutes = m + addedMinutes;
-      const endHour = (h + Math.floor(durationVal) + Math.floor(totalMinutes / 60)) % 24;
+      const endHour = h + Math.floor(durationVal) + Math.floor(totalMinutes / 60);
       const endMin = totalMinutes % 60;
       const endTimeVal = String(endHour).padStart(2, '0') + ':' + String(endMin).padStart(2, '0');
-
-      const name = document.getElementById('customerName').value.trim();
-      const phone = formatPhone(cleanPhone(document.getElementById('customerPhone').value));
 
       const payload = {
         service: document.getElementById('service').value,
@@ -421,65 +220,71 @@
         date: dateVal,
         startTime: startVal,
         endTime: endTimeVal,
-        customerName: name,
-        customerPhone: phone,
-        customerInfo: name + " " + phone, // รวมไว้ให้ Code.gs เดิมใช้ได้ (คอลัมน์ H)
+        customerInfo: document.getElementById('customerInfo').value,
         lineUserId: userLineId
       };
 
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 30000);
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res.success) {
+            // กรณีจองสำเร็จ
+            document.getElementById('modalBookingId').innerText = res.bookingId;
+            document.getElementById('successModal').classList.remove('hidden');
+          } else if (res.isOverlapping) {
+            // กรณีคิวซ้ำ
+            document.getElementById('overlapDoctorName').innerText = res.doctor;
+            const listContainer = document.getElementById('overlapTimeList');
+            listContainer.innerHTML = '';
+            
+            // วนลูปสร้างรายการคิวที่ไม่ว่าง
+            res.bookedSlots.forEach(slot => {
+              const li = document.createElement('li');
+              li.className = "flex items-center justify-center bg-white py-2 rounded-lg border border-orange-100 font-medium";
+              li.innerHTML = `<span class="mr-2 text-orange-500">🚫</span> ${slot}`;
+              listContainer.appendChild(li);
+            });
 
-      try {
-        const r = await fetch(GAS_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload),
-          signal: controller.signal
-        });
-        clearTimeout(timer);
-
-        const text = await r.text();
-        let res;
-        try {
-          res = JSON.parse(text);
-        } catch (parseErr) {
-          console.error("Response ไม่ใช่ JSON:", text);
-          throw new Error("เซิร์ฟเวอร์ตอบกลับผิดรูปแบบ");
-        }
-
-        if (res.success) {
-          document.getElementById('modalBookingId').innerText = res.bookingId;
-          document.getElementById('successModal').classList.remove('hidden');
-        } else {
-          alert("เกิดข้อผิดพลาด: " + res.error);
-          resetButton();
-        }
-      } catch (err) {
-        clearTimeout(timer);
-        console.error("Submit Error:", err);
-        const msg = err.name === "AbortError" ? "หมดเวลาเชื่อมต่อ กรุณาลองใหม่" : err.message;
-        alert("ระบบขัดข้อง: " + msg);
-        resetButton();
-      }
+            document.getElementById('overlapModal').classList.remove('hidden');
+            btn.disabled = false;
+            btn.innerText = "ยืนยันการจองคิว";
+          } else {
+            // กรณี Error อื่นๆ
+            alert("เกิดข้อผิดพลาด: " + res.error);
+            btn.disabled = false;
+            btn.innerText = "ยืนยันการจองคิว";
+          }
+        })
+        .withFailureHandler(err => {
+          alert("ระบบขัดข้อง: " + err.message);
+          btn.disabled = false;
+          btn.innerText = "ยืนยันการจองคิว";
+        })
+        .saveBookingFromLiff(payload);
     }
 
+    // ปิดหน้าต่างจองสำเร็จ
     function closeModalAndExit() {
       const modal = document.getElementById('successModal');
       if (modal) modal.classList.add('hidden');
       const form = document.getElementById('bookingForm');
       if (form) form.reset();
-      document.querySelectorAll('.err').forEach(el => el.classList.add('hidden'));
-      document.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
       const dateInput = document.getElementById('date');
-      if (dateInput) dateInput.value = todayStr();
-      const timeInput = document.getElementById('startTime');
-      if (timeInput) timeInput.value = nowTimeStr();
-      resetButton();
+      if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+      const btn = document.getElementById('submitBtn');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerText = "ยืนยันการจองคิว";
+      }
       try {
         if (typeof liff !== 'undefined' && liff.isInClient()) liff.closeWindow();
       } catch (e) {}
       try { window.close(); } catch (e) {}
+    }
+
+    // ปิดหน้าต่างคิวทับซ้อน (ให้เลือกลองเวลาใหม่)
+    function closeOverlapModal() {
+      const modal = document.getElementById('overlapModal');
+      if (modal) modal.classList.add('hidden');
     }
   </script>
 </body>
