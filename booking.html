@@ -273,6 +273,12 @@
       return d.getFullYear() + '-' + mm + '-' + dd;
     }
 
+    function nowTimeStr() {
+      // เวลาปัจจุบันตามเครื่อง รูปแบบ HH:MM
+      const d = new Date();
+      return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+
     function resetButton() {
       const btn = document.getElementById('submitBtn');
       btn.disabled = false;
@@ -337,6 +343,8 @@
     async function initApp() {
       const dateInput = document.getElementById('date');
       if (dateInput) dateInput.value = todayStr();
+      const timeInput = document.getElementById('startTime');
+      if (timeInput) timeInput.value = nowTimeStr();
 
       setStatus("", "1. กำลังเชื่อมต่อ LIFF...");
 
@@ -465,6 +473,8 @@
       document.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
       const dateInput = document.getElementById('date');
       if (dateInput) dateInput.value = todayStr();
+      const timeInput = document.getElementById('startTime');
+      if (timeInput) timeInput.value = nowTimeStr();
       resetButton();
       try {
         if (typeof liff !== 'undefined' && liff.isInClient()) liff.closeWindow();
