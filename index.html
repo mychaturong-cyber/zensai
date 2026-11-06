@@ -15,6 +15,7 @@
     --gold:#E3C27A; --thumb:#EADBC0;
   }
   *{box-sizing:border-box}
+  [hidden]{display:none !important}
   html,body{margin:0;background:var(--bg);color:var(--ink);
     font-family:'IBM Plex Sans Thai',system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
   button{font-family:inherit;cursor:pointer}
@@ -93,7 +94,7 @@
   .cta{height:48px;padding:0 22px;border-radius:24px;border:0;background:var(--accent);color:#fff;font-size:15px;font-weight:600}
   .cta:disabled{opacity:.6}
 
-  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);
+  .toast{position:fixed;left:50%;bottom:calc(110px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);
     padding:10px 16px;border-radius:12px;font-size:14px;z-index:30;display:none;max-width:90vw;text-align:center}
   .toast.show{display:block}
   .skeleton{height:110px;border-radius:14px;background:linear-gradient(90deg,#F1E8D6,#F8F2E6,#F1E8D6);
@@ -134,7 +135,7 @@
     </div>
     <fieldset id="sDur"><legend>เลือกระยะเวลา</legend></fieldset>
     <fieldset id="sOptWrap" hidden><legend id="sOptTitle">ตัวเลือก</legend><div class="chips" id="sOpt"></div></fieldset>
-    <div class="pts">
+    <div class="pts" id="sPtsRow">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8A6A2E" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M7 12h10"/></svg>
       <span>รับ <strong id="sPts">0</strong> แต้ม หลังใช้บริการ</span>
     </div>
@@ -150,9 +151,9 @@
 <script>
 /* ================== ตั้งค่า ================== */
 const CONFIG = {
-  LIFF_ID: '2012242488-9FyrgqQd',      // จาก LINE Developers > LIFF
-  SHEET_CSV_URL: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT_Zn71o_I7FgMjcHRCRzixSEFGeyavFXZJ57lqwxLIShnKe5nII9MDj4HGU1UefXMEYSWHhbrmtxed/pubhtml?gid=1917944634&single=true',            // Google Sheet > File > Share > Publish to web > CSV  (ว่าง = ใช้ข้อมูลตัวอย่าง)
-  BOOKING_URL: 'https://liff.line.me/2012242488-OK0d3lhO/',  // หน้าจองคิว (ว่าง = ส่งข้อความจองเข้าแชตแทน)
+  LIFF_ID: 'YOUR_LIFF_ID',      // จาก LINE Developers > LIFF
+  SHEET_CSV_URL: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT_Zn71o_I7FgMjcHRCRzixSEFGeyavFXZJ57lqwxLIShnKe5nII9MDj4HGU1UefXMEYSWHhbrmtxed/pubhtml?gid=1917944634SHEET_CSV_URL: '',single=true',            // Google Sheet > File > Share > Publish to web > CSV  (ว่าง = ใช้ข้อมูลตัวอย่าง)
+  BOOKING_URL: 'https://liff.line.me/2012242488-9FyrgqQd/',  // หน้าจองคิว (ว่าง = ส่งข้อความจองเข้าแชตแทน)
   POINTS_PER_100_BAHT: 10,      // อัตราแต้ม: ทุก 100 บาท ได้กี่แต้ม
 };
 
@@ -199,7 +200,7 @@ function parseCSV(text){
 function buildServices(rows){
   const map = new Map();
   for(const r of rows){
-    if(String(r.active).toUpperCase()==='FALSE') continue;
+    if(String(r.active).toUpperCase()==='FALSE' || !r.name) continue;
     const id = r.service_id || r.name;
     if(!map.has(id)) map.set(id,{id,category:'',name:'',desc:'',image:'',badge:'',optTitle:'',options:[],sort:999,durations:[]});
     const s = map.get(id);
@@ -213,16 +214,40 @@ function buildServices(rows){
   return [...map.values()].map(s=>(s.durations.sort((a,b)=>a.min-b.min), s)).sort((a,b)=>a.sort-b.sort);
 }
 
+/* รับได้ทั้งลิงก์แชร์ (/edit), ลิงก์ publish (pubhtml) และลิงก์ CSV ตรง */
+function toCsvUrl(url){
+  const pub = url.match(/\/spreadsheets\/d\/e\/([\w-]+)\//);
+  if(pub){
+    const gid = (url.match(/[?&#]gid=(\d+)/)||[])[1];
+    return `https://docs.google.com/spreadsheets/d/e/${pub[1]}/pub?output=csv${gid?`&gid=${gid}`:''}`;
+  }
+  const doc = url.match(/\/spreadsheets\/d\/([\w-]+)/);
+  if(doc){
+    const gid = (url.match(/[?&#]gid=(\d+)/)||[])[1] || '0';
+    return `https://docs.google.com/spreadsheets/d/${doc[1]}/gviz/tq?tqx=out:csv&gid=${gid}`;
+  }
+  return url;
+}
+
 async function loadData(){
-  let text = SAMPLE_CSV;
+  let rows = parseCSV(SAMPLE_CSV);
   if(CONFIG.SHEET_CSV_URL){
     try{
-      const res = await fetch(CONFIG.SHEET_CSV_URL + (CONFIG.SHEET_CSV_URL.includes('?')?'&':'?') + 't=' + Date.now());
-      if(!res.ok) throw new Error(res.status);
-      text = await res.text();
-    }catch(e){ toast('โหลดเมนูล่าสุดไม่สำเร็จ แสดงข้อมูลสำรอง'); }
+      const url = toCsvUrl(CONFIG.SHEET_CSV_URL);
+      const res = await fetch(url + (url.includes('?')?'&':'?') + 't=' + Date.now());
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const text = (await res.text()).replace(/^﻿/, '');
+      if(/^\s*</.test(text)) throw new Error('ได้หน้าเว็บกลับมา ไม่ใช่ CSV (เช็กว่าแชร์ Sheet แบบ "ทุกคนที่มีลิงก์" แล้ว)');
+      const sheetRows = parseCSV(text);
+      if(!sheetRows.some(r => r.name && r.duration_min))
+        throw new Error('ไม่พบคอลัมน์ name / duration_min ในแถวแรกของ Sheet');
+      rows = sheetRows;
+    }catch(e){
+      console.warn('Sheet load failed:', e);
+      toast('โหลดเมนูจาก Sheet ไม่สำเร็จ: ' + e.message);
+    }
   }
-  SERVICES = buildServices(parseCSV(text));
+  SERVICES = buildServices(rows);
 }
 
 /* ================== render ================== */
@@ -245,7 +270,7 @@ function renderList(){
     const d = promo.durations[0] || {min:0,price:0};
     html += `<button class="promo" data-id="${esc(promo.id)}">
       <div style="flex:1"><small>โปรโมชั่น</small><strong class="serif">${esc(promo.name)}</strong>
-      <span class="sub">${d.min} นาที · ${baht(d.price)} · ได้ ${points(d.price)} แต้ม</span></div>
+      <span class="sub">${d.min} นาที · ${baht(d.price)}${points(d.price)>0?` · ได้ ${points(d.price)} แต้ม`:''}</span></div>
       <span class="go">ดูเลย</span></button>`;
   }
   const rest = items.filter(s=>s!==promo);
@@ -293,6 +318,7 @@ function updateSummary(){
   $('sSumLabel').textContent = `${chosenDur.min} นาที` + (chosenOpt ? ` · ${chosenOpt}` : '');
   $('sSumPrice').textContent = baht(chosenDur.price);
   $('sPts').textContent = points(chosenDur.price);
+  $('sPtsRow').hidden = points(chosenDur.price) <= 0;
 }
 
 /* ================== จองคิว ================== */
