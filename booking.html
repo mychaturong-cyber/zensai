@@ -240,7 +240,7 @@ let userLineId = "";
 const LIFF_ID = "2012242488-OK0d3lhO";
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzGYGDZ9U1p-C6fhe0xOBfk2Kd2uC1qpuZTYIqtyW0Fg2zHU_-hNtagqy3VfTC_7IYmIg/exec";
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT_Zn71o_I7FgMjcHRCRzixSEFGeyavFXZJ57lqwxLIShnKe5nII9MDj4HGU1UefXMEYSWHhbrmtxed/pubhtml?gid=1917944634&single=true";
-const DOCTORS = ["พี่สุ", "พี่นุ่น"];
+let DOCTORS = ["พี่สุ", "พี่นุ่น"];   // สำรอง: ใช้เมื่อโหลดรายชื่อจากชีต "ชื่อพนักงาน/หมอ" ไม่ได้
 const OPEN = "10:00", CLOSE = "22:00", SLOT_STEP = 30;   // เวลาทำการ / ช่วงห่างของช่องเวลา (นาที)
 const START_URL = location.href;
 
@@ -313,6 +313,18 @@ async function loadServices(){
     SERVICES = FALLBACK_SERVICES.map(n => ({ id: '', name: n, durations: FALLBACK_DURATIONS.map(min => ({ min, price: 0 })) }));
   }
   renderServices();
+}
+
+/* ================== โหลดรายชื่อหมอจากชีต ================== */
+async function loadDoctors(){
+  $('docList').innerHTML = '<div class="skeleton" style="height:56px"></div><div class="skeleton" style="height:56px"></div>';
+  try{
+    const r = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'doctors' }) });
+    const res = await r.json();
+    if (res.success && Array.isArray(res.doctors) && res.doctors.length) DOCTORS = res.doctors;
+    else throw new Error(res.error || 'ไม่มีรายชื่อ');
+  }catch(e){ console.warn('ใช้รายชื่อหมอสำรอง:', e); }
+  renderDoctors();
 }
 
 /* ================== render ================== */
@@ -586,8 +598,8 @@ async function initApp(){
   const d = (n.getHours() * 60 + n.getMinutes() >= lastStart) ? new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1) : n;
   S.date = isoDate(d);
 })();
-renderDoctors(); renderDates(); renderDurations(); renderSlots();
-Promise.allSettled([initApp(), loadServices()]).then(prefillFromMenu);
+renderDates(); renderDurations(); renderSlots();
+Promise.allSettled([initApp(), loadServices(), loadDoctors()]).then(prefillFromMenu);
 </script>
 </body>
 </html>
