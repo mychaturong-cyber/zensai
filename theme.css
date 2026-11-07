@@ -1,0 +1,128 @@
+/* ==========================================================
+   เส้นสาย — Zensai Massage · ธีมกลาง (ใช้ร่วมกันทุกหน้า)
+   แก้สี/ฟอนต์/ระยะที่นี่ที่เดียว ทั้งเว็บจะเปลี่ยนตาม
+   ========================================================== */
+:root{
+  /* สี CI */
+  --c-bg:        #FAF8F2;   /* Ivory พื้นหลังหลัก */
+  --c-surface:   #FFFFFF;   /* การ์ด */
+  --c-primary:   #454A27;   /* Olive Green ปุ่มหลัก */
+  --c-primary-h: #35391E;   /* ปุ่มเมื่อกด/ชี้ */
+  --c-primary-soft: #EEEFE4;/* พื้นอ่อนของสีหลัก (สถานะเลือก) */
+  --c-gold:      #B99350;   /* ทอง: ใช้กับเส้น/ไอคอน/รายละเอียดเท่านั้น */
+  --c-line:      #E7E1D5;   /* เส้นแบ่ง ขอบอ่อน */
+  --c-text:      #292D20;   /* ข้อความหลัก */
+  --c-text-2:    #626657;   /* ข้อความรอง */
+  --c-muted-bg:  #F3F0E7;   /* พื้นช่องปิด/ไม่ว่าง */
+  --c-danger:    #A3341F;   /* ข้อผิดพลาด */
+  --c-danger-bg: #FBEDE8;
+  --c-success:   #3F6B2E;
+
+  /* ตัวอักษร */
+  --font: 'Noto Sans Thai', 'Noto Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fs-xs: 13px;  --fs-sm: 14px;  --fs-md: 16px;  --fs-lg: 18px;
+  --fs-xl: 22px;  --fs-2xl: 26px;
+  --lh: 1.6;
+
+  /* ระยะ มุม เงา */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px; --sp-8: 32px;
+  --r-sm: 10px; --r-md: 12px; --r-lg: 16px; --r-pill: 999px;
+  --shadow: 0 1px 2px rgba(41,45,32,.06), 0 4px 14px rgba(41,45,32,.05);
+  --tap: 48px;               /* ขนาดปุ่มขั้นต่ำ (>=44px) */
+  --maxw: 560px;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none !important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--c-bg); color:var(--c-text);
+  font-family:var(--font); font-size:var(--fs-md); line-height:var(--lh);
+  -webkit-tap-highlight-color:transparent; overflow-x:hidden;
+}
+h1,h2,h3{margin:0;line-height:1.35;font-weight:700}
+p{margin:0}
+a{color:var(--c-primary)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--c-gold);outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.container{max-width:var(--maxw);margin:0 auto;padding:0 var(--sp-4)}
+
+/* ---------- หัวร้าน ---------- */
+.brandbar{background:var(--c-surface);border-bottom:1px solid var(--c-line)}
+.brandbar .container{display:flex;align-items:center;gap:var(--sp-3);min-height:68px;padding-top:var(--sp-2);padding-bottom:var(--sp-2)}
+.brand-logo{height:48px;width:auto;flex:none}
+.shop-hero{margin:0;height:170px;overflow:hidden;background:var(--c-muted-bg)}
+.shop-hero img{width:100%;height:100%;object-fit:cover;object-position:35% 60%;display:block}
+@media (min-width:640px){.shop-hero{height:260px}}
+.brand-text{display:flex;flex-direction:column;min-width:0}
+.brand-th{font-size:var(--fs-xl);font-weight:700;color:var(--c-primary);line-height:1.2}
+.brand-en{font-size:var(--fs-xs);color:var(--c-text-2);letter-spacing:.02em}
+.brand-line{height:2px;background:linear-gradient(90deg,var(--c-gold),transparent 70%);opacity:.7}
+
+.page-title{font-size:var(--fs-2xl);color:var(--c-text);margin:var(--sp-5) 0 var(--sp-1)}
+.page-sub{color:var(--c-text-2);font-size:var(--fs-sm)}
+
+/* ---------- ปุ่ม ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2);
+  min-height:var(--tap);padding:0 var(--sp-5);border-radius:var(--r-md);
+  border:1px solid transparent;font-size:var(--fs-md);font-weight:600;cursor:pointer;
+  text-decoration:none;transition:background-color .15s,border-color .15s;
+}
+.btn-primary{background:var(--c-primary);color:#fff}
+.btn-primary:hover,.btn-primary:active{background:var(--c-primary-h)}
+.btn-secondary{background:var(--c-surface);color:var(--c-primary);border-color:var(--c-primary)}
+.btn-secondary:hover{background:var(--c-primary-soft)}
+.btn-ghost{background:transparent;color:var(--c-text-2);border-color:var(--c-line)}
+.btn-block{width:100%}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.icon-btn{width:var(--tap);height:var(--tap);display:inline-flex;align-items:center;justify-content:center;
+  border-radius:var(--r-pill);border:1px solid var(--c-line);background:var(--c-surface);color:var(--c-text);cursor:pointer}
+
+/* ---------- การ์ด ---------- */
+.card{background:var(--c-surface);border:1px solid var(--c-line);border-radius:var(--r-lg);box-shadow:var(--shadow)}
+
+/* ---------- ฟอร์ม ---------- */
+.field{display:flex;flex-direction:column;gap:var(--sp-1)}
+.field label{font-weight:600;font-size:var(--fs-md)}
+.input{
+  min-height:var(--tap);width:100%;padding:var(--sp-3) var(--sp-4);border-radius:var(--r-md);
+  border:1px solid var(--c-line);background:var(--c-surface);font-size:var(--fs-md);
+}
+.input:focus{border-color:var(--c-primary);outline:none;box-shadow:0 0 0 3px var(--c-primary-soft)}
+.input.invalid{border-color:var(--c-danger)}
+.err{color:var(--c-danger);font-size:var(--fs-sm)}
+
+/* ---------- ตัวเลือก (radio card / chip) ---------- */
+.choice{position:relative;display:flex;align-items:center;gap:var(--sp-3);min-height:56px;
+  padding:var(--sp-3) var(--sp-4);border:1px solid var(--c-line);border-radius:var(--r-md);
+  background:var(--c-surface);cursor:pointer}
+.choice input{position:absolute;opacity:0;pointer-events:none}
+.choice .tick{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--c-line);
+  display:flex;align-items:center;justify-content:center;color:#fff}
+.choice:has(input:checked){border:2px solid var(--c-primary);background:var(--c-primary-soft);padding:calc(var(--sp-3) - 1px) calc(var(--sp-4) - 1px)}
+.choice:has(input:checked) .tick{background:var(--c-primary);border-color:var(--c-primary)}
+.choice:has(input:focus-visible){outline:3px solid var(--c-gold);outline-offset:2px}
+.choice .tick svg{opacity:0}
+.choice:has(input:checked) .tick svg{opacity:1}
+
+/* ---------- แจ้งเตือน ---------- */
+.alert{display:flex;gap:var(--sp-3);padding:var(--sp-3) var(--sp-4);border-radius:var(--r-md);font-size:var(--fs-sm)}
+.alert-error{background:var(--c-danger-bg);color:var(--c-danger)}
+.alert-info{background:var(--c-muted-bg);color:var(--c-text-2)}
+
+.spinner{width:20px;height:20px;border-radius:50%;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;animation:spin .8s linear infinite}
+.spinner.dark{border-color:var(--c-line);border-top-color:var(--c-primary)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.skeleton{border-radius:var(--r-lg);background:linear-gradient(90deg,#F1EDE2,#F8F6EF,#F1EDE2);background-size:200% 100%;animation:sh 1.2s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+
+/* ---------- ท้ายร้าน ---------- */
+.site-footer{margin-top:var(--sp-8);padding:var(--sp-6) 0 var(--sp-8);border-top:1px solid var(--c-line);
+  color:var(--c-text-2);font-size:var(--fs-sm)}
+.site-footer .row{display:flex;align-items:center;gap:var(--sp-2);min-height:32px}
+.site-footer svg{color:var(--c-gold);flex:none}
+.site-footer a{color:var(--c-primary);font-weight:600}
+
+@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}

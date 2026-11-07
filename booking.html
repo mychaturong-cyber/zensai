@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>จองคิว · เส้นสาย Zensai Massage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  main{padding-bottom:140px}
+  .status-line{display:inline-flex;align-items:center;gap:6px;margin-top:var(--sp-2);font-size:var(--fs-sm);color:var(--c-text-2)}
+  .status-line.ok{color:var(--c-success)}
+  .status-line .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+
+  .step{margin-top:var(--sp-6)}
+  .step-head{display:flex;align-items:center;gap:var(--sp-3);margin-bottom:var(--sp-3)}
+  .step-no{flex:none;width:30px;height:30px;border-radius:50%;border:1.5px solid var(--c-gold);color:var(--c-primary);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--fs-sm)}
+  .step-head h2{font-size:var(--fs-lg)}
+  .step-hint{font-size:var(--fs-sm);color:var(--c-text-2);margin:-4px 0 var(--sp-3) 42px}
+  .stack{display:flex;flex-direction:column;gap:var(--sp-2)}
+  .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-2)}
+  .grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-2)}
+  @media (min-width:480px){ .grid-dates{grid-template-columns:repeat(4,minmax(0,1fr))} }
+
+  .choice .body{flex:1;min-width:0;display:flex;flex-direction:column}
+  .choice .name{font-weight:600}
+  .choice .meta{font-size:var(--fs-sm);color:var(--c-text-2)}
+  .choice .price{font-weight:700;color:var(--c-primary);white-space:nowrap}
+  .choice.compact{flex-direction:column;align-items:flex-start;gap:2px;min-height:64px}
+  .choice.compact .tick{position:absolute;top:10px;right:10px;width:20px;height:20px}
+
+  /* วันที่ */
+  .date-chip{flex-direction:column;align-items:center;justify-content:center;gap:0;min-height:64px;padding:var(--sp-2);text-align:center}
+  .date-chip .d1{font-size:var(--fs-xs);color:var(--c-text-2)}
+  .date-chip .d2{font-weight:700;font-size:var(--fs-lg);white-space:nowrap}
+  .date-chip:has(input:checked){padding:calc(var(--sp-2) - 1px)}
+  .date-chip:has(input:checked) .d1{color:var(--c-primary)}
+  .other-date{margin-top:var(--sp-3)}
+
+  /* ช่องเวลา: ว่าง / เลือก / จองไม่ได้ ต่างกันทั้งสี เส้น และสัญลักษณ์ */
+  .slot{position:relative;min-height:var(--tap);display:flex;align-items:center;justify-content:center;gap:4px;
+    border:1px solid var(--c-line);border-radius:var(--r-sm);background:var(--c-surface);font-weight:600;cursor:pointer;font-size:var(--fs-md)}
+  .slot input{position:absolute;opacity:0;pointer-events:none}
+  .slot .ck{display:none}
+  .slot:has(input:checked){background:var(--c-primary);border-color:var(--c-primary);color:#fff}
+  .slot:has(input:checked) .ck{display:inline}
+  .slot:has(input:focus-visible){outline:3px solid var(--c-gold);outline-offset:2px}
+  .slot:has(input:disabled){background:var(--c-muted-bg);border-style:dashed;color:#6A6B60;cursor:not-allowed;text-decoration:line-through;font-weight:400}
+  .legend{display:flex;flex-wrap:wrap;gap:var(--sp-4);margin-top:var(--sp-3);font-size:var(--fs-xs);color:var(--c-text-2)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:22px;height:16px;border-radius:4px;border:1px solid var(--c-line);background:var(--c-surface)}
+  .sw.sel{background:var(--c-primary);border-color:var(--c-primary)}
+  .sw.off{background:var(--c-muted-bg);border-style:dashed}
+  .empty-box{padding:var(--sp-4);text-align:center;color:var(--c-text-2);font-size:var(--fs-sm);border:1px dashed var(--c-line);border-radius:var(--r-md)}
+
+  /* แถบล่าง */
+  .bottombar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--c-surface);border-top:1px solid var(--c-line);
+    box-shadow:0 -4px 16px rgba(41,45,32,.06);padding:var(--sp-3) 0 calc(var(--sp-3) + env(safe-area-inset-bottom))}
+  .bottombar .container{display:flex;align-items:center;gap:var(--sp-3)}
+  .bb-sum{flex:1;min-width:0;display:flex;flex-direction:column}
+  .bb-sum small{font-size:var(--fs-xs);color:var(--c-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bb-sum strong{font-size:var(--fs-lg)}
+  .bottombar .btn{min-width:132px;min-height:52px;font-size:var(--fs-lg)}
+
+  /* หน้าต่าง */
+  .overlay{position:fixed;inset:0;z-index:40;background:rgba(41,45,32,.45);display:flex;align-items:flex-end;justify-content:center}
+  .sheet{width:100%;max-width:var(--maxw);max-height:92vh;overflow-y:auto;background:var(--c-bg);border-radius:20px 20px 0 0;
+    padding:var(--sp-5) var(--sp-4) calc(var(--sp-5) + env(safe-area-inset-bottom))}
+  @media (min-width:640px){ .overlay{align-items:center} .sheet{border-radius:20px} }
+  .sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-4)}
+  .sheet-head h2{font-size:var(--fs-xl)}
+  .summary{padding:var(--sp-2) var(--sp-4)}
+  .summary .row{display:flex;justify-content:space-between;gap:var(--sp-4);padding:var(--sp-3) 0;border-bottom:1px solid var(--c-line)}
+  .summary .row:last-child{border-bottom:0}
+  .summary .k{color:var(--c-text-2);flex:none}
+  .summary .v{font-weight:600;text-align:right;min-width:0;overflow-wrap:anywhere}
+  .summary .total .v{font-size:var(--fs-xl);color:var(--c-primary)}
+  .note{font-size:var(--fs-sm);color:var(--c-text-2);margin-top:var(--sp-3)}
+  .sheet .actions{display:flex;flex-direction:column;gap:var(--sp-2);margin-top:var(--sp-5)}
+  .slots-list{list-style:none;margin:var(--sp-3) 0 0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
+  .slots-list li{padding:var(--sp-2) var(--sp-3);border:1px dashed var(--c-line);border-radius:var(--r-sm);background:var(--c-muted-bg);text-align:center;font-weight:600}
+
+  /* สำเร็จ */
+  .done{margin-top:var(--sp-6);padding:var(--sp-6) var(--sp-4);text-align:center}
+  .done .ok-icon{width:64px;height:64px;margin:0 auto var(--sp-3);border-radius:50%;border:2px solid var(--c-gold);
+    display:flex;align-items:center;justify-content:center;color:var(--c-primary)}
+  .done h2{font-size:var(--fs-2xl)}
+  .ref{display:inline-block;margin:var(--sp-3) 0 var(--sp-4);padding:var(--sp-2) var(--sp-5);border-radius:var(--r-md);
+    background:var(--c-primary-soft);color:var(--c-primary);font-size:var(--fs-2xl);font-weight:700;letter-spacing:.04em}
+  .done .summary{text-align:left;border:1px solid var(--c-line);border-radius:var(--r-md);margin-bottom:var(--sp-4)}
+</style>
+</head>
+<body>
+
+<header class="brandbar">
+  <div class="container">
+    <img class="brand-logo" src="logo.png" alt="โลโก้เส้นสาย" onerror="this.remove()">
+    <div class="brand-text">
+      <span class="brand-th">เส้นสาย</span>
+      <span class="brand-en">Zensai Massage · นวดเพื่อสุขภาพ</span>
+    </div>
+  </div>
+  <div class="brand-line"></div>
+</header>
+
+<main class="container" id="main">
+  <h1 class="page-title">จองคิวนวด</h1>
+  <p class="page-sub">เลือกบริการ หมอ และเวลาที่สะดวก ใช้เวลาไม่ถึง 1 นาที</p>
+  <div id="lineStatus" class="status-line" role="status"><span class="dot"></span><span>กำลังเชื่อมต่อ LINE...</span></div>
+
+  <form id="bookingForm" novalidate>
+    <!-- 1 บริการ -->
+    <section class="step" aria-labelledby="h-svc">
+      <div class="step-head"><span class="step-no">1</span><h2 id="h-svc">เลือกบริการ</h2></div>
+      <div class="stack" id="svcList" role="radiogroup" aria-labelledby="h-svc">
+        <div class="skeleton" style="height:64px"></div><div class="skeleton" style="height:64px"></div><div class="skeleton" style="height:64px"></div>
+      </div>
+      <p class="err" data-err="service" hidden>กรุณาเลือกบริการ</p>
+    </section>
+
+    <!-- 2 ระยะเวลา -->
+    <section class="step" aria-labelledby="h-dur">
+      <div class="step-head"><span class="step-no">2</span><h2 id="h-dur">เลือกระยะเวลา</h2></div>
+      <div class="grid2" id="durList" role="radiogroup" aria-labelledby="h-dur"></div>
+      <p class="empty-box" id="durEmpty">เลือกบริการก่อน แล้วระยะเวลาและราคาจะแสดงที่นี่</p>
+      <p class="err" data-err="duration" hidden>กรุณาเลือกระยะเวลา</p>
+    </section>
+
+    <!-- 3 หมอ -->
+    <section class="step" aria-labelledby="h-doc">
+      <div class="step-head"><span class="step-no">3</span><h2 id="h-doc">เลือกหมอนวด</h2></div>
+      <div class="grid2" id="docList" role="radiogroup" aria-labelledby="h-doc"></div>
+      <p class="err" data-err="doctor" hidden>กรุณาเลือกหมอนวด</p>
+    </section>
+
+    <!-- 4 วันและเวลา -->
+    <section class="step" aria-labelledby="h-time">
+      <div class="step-head"><span class="step-no">4</span><h2 id="h-time">เลือกวันและเวลา</h2></div>
+      <p class="step-hint">ร้านเปิดทุกวัน 10:00–22:00 น.</p>
+      <div class="grid4 grid-dates" id="dateList" role="radiogroup" aria-label="วันที่"></div>
+      <div class="field other-date">
+        <label for="otherDate" style="font-weight:500;font-size:var(--fs-sm);color:var(--c-text-2)">หรือเลือกวันอื่น</label>
+        <input class="input" type="date" id="otherDate">
+      </div>
+      <h3 class="sr-only" id="h-slot">เวลาเริ่ม</h3>
+      <div class="grid4" id="slotList" role="radiogroup" aria-labelledby="h-slot" style="margin-top:var(--sp-4)"></div>
+      <p class="empty-box" id="slotEmpty" hidden></p>
+      <div class="legend" aria-hidden="true">
+        <span><i class="sw"></i>ว่าง</span>
+        <span><i class="sw sel"></i>✓ เลือกแล้ว</span>
+        <span><i class="sw off"></i><s>จองไม่ได้</s></span>
+      </div>
+      <p class="note">เวลาที่แสดงเป็นช่วงเวลาทำการ ระบบจะตรวจคิวของหมออีกครั้งเมื่อกดยืนยัน</p>
+      <p class="err" data-err="time" hidden>กรุณาเลือกเวลาเริ่ม</p>
+    </section>
+
+    <!-- 5 ผู้จอง -->
+    <section class="step" aria-labelledby="h-me">
+      <div class="step-head"><span class="step-no">5</span><h2 id="h-me">ข้อมูลผู้จอง</h2></div>
+      <div class="stack" style="gap:var(--sp-4)">
+        <div class="field">
+          <label for="customerName">ชื่อ</label>
+          <input class="input" type="text" id="customerName" placeholder="เช่น คุณสุขภาพดี" autocomplete="name" maxlength="60">
+          <p class="err" data-err="customerName" hidden>กรุณากรอกชื่ออย่างน้อย 2 ตัวอักษร</p>
+        </div>
+        <div class="field">
+          <label for="customerPhone">เบอร์โทรติดต่อ</label>
+          <input class="input" type="tel" id="customerPhone" placeholder="เช่น 081-234-5678" inputmode="tel" autocomplete="tel" maxlength="14">
+          <p class="err" data-err="customerPhone" hidden>กรุณากรอกเบอร์มือถือ 10 หลัก หรือเบอร์บ้าน 9 หลัก เช่น 0812345678</p>
+        </div>
+      </div>
+    </section>
+  </form>
+
+  <footer class="site-footer" aria-label="ข้อมูลร้าน">
+    <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>เปิดทุกวัน 10:00–22:00 น.</div>
+    <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg><a href="tel:0838974088">083-897-4088</a></div>
+    <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-4.9A8.5 8.5 0 1 1 21 11.5z"/></svg><a href="https://lin.ee/VCzZf3y">แชต LINE ร้าน</a></div>
+  </footer>
+</main>
+
+<!-- สำเร็จ -->
+<section class="container" id="doneView" hidden>
+  <div class="card done" role="status" aria-live="polite">
+    <div class="ok-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg></div>
+    <h2>จองคิวสำเร็จ</h2>
+    <p class="page-sub">เลขอ้างอิงการจอง</p>
+    <div class="ref" id="doneRef">BK-000000</div>
+    <div class="summary" id="doneSummary"></div>
+    <p class="note" style="margin-bottom:var(--sp-4)"><span id="doneLineNote">ร้านส่งใบนัดเข้าแชต LINE แล้ว</span> หากต้องการเลื่อนหรือยกเลิก กรุณาแจ้งร้านทาง LINE หรือโทร <a href="tel:0838974088" style="white-space:nowrap">083-897-4088</a></p>
+    <div class="stack">
+      <button class="btn btn-primary btn-block" id="doneClose">เสร็จสิ้น</button>
+      <a class="btn btn-secondary btn-block" href="https://lin.ee/VCzZf3y">ติดต่อร้านทาง LINE</a>
+    </div>
+  </div>
+</section>
+
+<!-- แถบล่าง -->
+<div class="bottombar" id="bottombar">
+  <div class="container">
+    <div class="bb-sum" aria-live="polite"><small id="bbLabel">ยังไม่ได้เลือกบริการ</small><strong id="bbPrice">—</strong></div>
+    <button class="btn btn-primary" id="bookBtn" type="button">จองคิว</button>
+  </div>
+</div>
+
+<!-- ตรวจสอบก่อนยืนยัน -->
+<div class="overlay" id="reviewModal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rvTitle">
+    <div class="sheet-head">
+      <h2 id="rvTitle">ตรวจสอบการจอง</h2>
+      <button class="icon-btn" type="button" data-close aria-label="ปิด"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="card summary" id="rvSummary"></div>
+    <p class="note">ราคาตามรายการบริการของร้าน</p>
+    <div class="alert alert-error" id="rvError" role="alert" hidden></div>
+    <div class="actions">
+      <button class="btn btn-primary btn-block" id="confirmBtn" type="button" style="min-height:52px;font-size:var(--fs-lg)">ยืนยันการจอง</button>
+      <button class="btn btn-ghost btn-block" type="button" data-close>แก้ไขข้อมูล</button>
+    </div>
+  </div>
+</div>
+
+<!-- คิวชน -->
+<div class="overlay" id="overlapModal" hidden>
+  <div class="sheet" role="alertdialog" aria-modal="true" aria-labelledby="ovTitle">
+    <div class="sheet-head"><h2 id="ovTitle">เวลานี้หมอไม่ว่าง</h2></div>
+    <p><strong id="overlapDoctorName"></strong> มีคิวในช่วงเวลาต่อไปนี้ของวันที่เลือก กรุณาเลือกเวลาที่ไม่ทับช่วงนี้ หรือเลือกหมอท่านอื่น</p>
+    <ul class="slots-list" id="overlapTimeList"></ul>
+    <div class="actions"><button class="btn btn-primary btn-block" type="button" id="overlapBack">เลือกเวลาใหม่</button></div>
+  </div>
+</div>
+
+<script>
+/* ================== ตั้งค่า (ค่าเดิมของระบบ) ================== */
+let userLineId = "";
+const LIFF_ID = "2012242488-OK0d3lhO";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzGYGDZ9U1p-C6fhe0xOBfk2Kd2uC1qpuZTYIqtyW0Fg2zHU_-hNtagqy3VfTC_7IYmIg/exec";
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT_Zn71o_I7FgMjcHRCRzixSEFGeyavFXZJ57lqwxLIShnKe5nII9MDj4HGU1UefXMEYSWHhbrmtxed/pubhtml?gid=1917944634&single=true";
+const DOCTORS = ["พี่สุ", "พี่นุ่น"];
+const OPEN = "10:00", CLOSE = "22:00", SLOT_STEP = 30;   // เวลาทำการ / ช่วงห่างของช่องเวลา (นาที)
+const START_URL = location.href;
+
+// รายการสำรอง (ใช้เมื่อโหลด Sheet ไม่ได้) = รายการเดิมของหน้าจอง ไม่มีราคา
+const FALLBACK_SERVICES = ["นวดไทย","นวดเท้า","นวด คอ บ่า ไหล่","นวดไทยออยล์","นวดอโรม่า","นวดน้ำมันร้อน","ขัดผิว","นวดอโรม่า + ขัดผิว","นวดไทยประคบสมุนไพร","นวดไทยออยล์ประคบสมุนไพร"];
+const FALLBACK_DURATIONS = [60, 90, 120, 150, 180];
+const SERVICE_MAP = { thai:"นวดไทย", thaioil:"นวดไทยออยล์", foot:"นวดเท้า", office:"นวด คอ บ่า ไหล่", oil:"นวดอโรม่า", stone:"นวดไทยประคบสมุนไพร" };
+
+/* ================== state ================== */
+let SERVICES = [];           // [{id,name,durations:[{min,price}]}]
+const S = { service:null, dur:null, doctor:null, date:null, time:null };
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const baht = n => '฿' + Number(n).toLocaleString('th-TH');
+const norm = s => String(s || '').replace(/\s+/g, '');
+const pad = n => String(n).padStart(2, '0');
+const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const fromMin = m => pad(Math.floor(m / 60)) + ':' + pad(m % 60);
+const isoDate = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const durLabel = m => (m % 60 === 0 ? (m / 60) + ' ชั่วโมง' : (m >= 60 ? (Math.floor(m / 60) + ' ชม. ' + (m % 60) + ' นาที') : m + ' นาที'));
+const TICK = '<span class="tick"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg></span>';
+
+function setStatus(type, text){
+  const el = $('lineStatus'); el.className = 'status-line' + (type ? ' ' + type : '');
+  el.querySelector('span:last-child').textContent = text;
+}
+
+/* ================== โหลดบริการจาก Sheet ================== */
+function toCsvUrl(url){
+  const pub = url.match(/\/spreadsheets\/d\/e\/([\w-]+)\//);
+  if (pub){ const gid = (url.match(/[?&#]gid=(\d+)/) || [])[1]; return `https://docs.google.com/spreadsheets/d/e/${pub[1]}/pub?output=csv${gid ? `&gid=${gid}` : ''}`; }
+  const doc = url.match(/\/spreadsheets\/d\/([\w-]+)/);
+  if (doc){ const gid = (url.match(/[?&#]gid=(\d+)/) || [])[1] || '0'; return `https://docs.google.com/spreadsheets/d/${doc[1]}/gviz/tq?tqx=out:csv&gid=${gid}`; }
+  return url;
+}
+function parseCSV(text){
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (q){ if (c === '"'){ if (text[i + 1] === '"'){ f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ','){ row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r'){ if (c === '\r' && text[i + 1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+    else f += c;
+  }
+  if (f || row.length){ row.push(f); rows.push(row); }
+  const head = (rows.shift() || []).map(h => h.trim().toLowerCase());
+  return rows.filter(r => r.some(v => v.trim())).map(r => Object.fromEntries(head.map((h, i) => [h, (r[i] ?? '').trim()])));
+}
+async function loadServices(){
+  try{
+    const url = toCsvUrl(SHEET_URL);
+    const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = (await res.text()).replace(/^﻿/, '');
+    if (/^\s*</.test(text)) throw new Error('Sheet ไม่ได้ส่ง CSV');
+    const map = new Map();
+    for (const r of parseCSV(text)){
+      if (!r.name || String(r.active).toUpperCase() === 'FALSE') continue;
+      const id = r.service_id || r.name;
+      if (!map.has(id)) map.set(id, { id, name: r.name, sort: Number(r.sort) || 999, durations: [] });
+      const s = map.get(id), min = Number(r.duration_min), price = Number(String(r.price).replace(/[^\d.]/g, '')) || 0;
+      if (min && !s.durations.some(d => d.min === min)) s.durations.push({ min, price });
+    }
+    SERVICES = [...map.values()].map(s => (s.durations.sort((a, b) => a.min - b.min), s)).sort((a, b) => a.sort - b.sort);
+    if (!SERVICES.length) throw new Error('ไม่พบบริการ');
+  }catch(e){
+    console.warn('ใช้รายการบริการสำรอง:', e);
+    SERVICES = FALLBACK_SERVICES.map(n => ({ id: '', name: n, durations: FALLBACK_DURATIONS.map(min => ({ min, price: 0 })) }));
+  }
+  renderServices();
+}
+
+/* ================== render ================== */
+function priceRange(s){
+  const ps = s.durations.map(d => d.price).filter(Boolean);
+  const mins = s.durations.map(d => d.min);
+  const t = mins.length ? (mins[0] === mins[mins.length - 1] ? `${mins[0]} นาที` : `${mins[0]}–${mins[mins.length - 1]} นาที`) : '';
+  const p = ps.length ? (Math.min(...ps) === Math.max(...ps) ? baht(ps[0]) : `${baht(Math.min(...ps))}–${baht(Math.max(...ps)).slice(1)}`) : 'สอบถามราคาที่ร้าน';
+  return { t, p };
+}
+function renderServices(){
+  $('svcList').innerHTML = SERVICES.map((s, i) => { const r = priceRange(s); return `
+    <label class="choice"><input type="radio" name="service" value="${i}">${TICK}
+      <span class="body"><span class="name">${esc(s.name)}</span><span class="meta">${esc(r.t)}</span></span>
+      <span class="price">${esc(r.p)}</span></label>`; }).join('');
+}
+function renderDurations(){
+  const s = S.service;
+  $('durEmpty').hidden = !!s;
+  $('durList').innerHTML = !s ? '' : s.durations.map(d => `
+    <label class="choice compact"><input type="radio" name="dur" value="${d.min}" ${S.dur && S.dur.min === d.min ? 'checked' : ''}>${TICK}
+      <span class="name">${durLabel(d.min)}</span><span class="price">${d.price ? baht(d.price) : 'ราคาตามหน้าร้าน'}</span></label>`).join('');
+}
+function renderDoctors(){
+  $('docList').innerHTML = DOCTORS.map(d => `
+    <label class="choice"><input type="radio" name="doctor" value="${esc(d)}">${TICK}<span class="body"><span class="name">${esc(d)}</span></span></label>`).join('');
+}
+function renderDates(){
+  const fmt1 = new Intl.DateTimeFormat('th-TH', { weekday: 'short' });
+  const fmt2 = new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short' });
+  const today = new Date(); let html = '';
+  for (let i = 0; i < 8; i++){
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+    const iso = isoDate(d);
+    html += `<label class="choice date-chip"><input type="radio" name="date" value="${iso}" ${S.date === iso ? 'checked' : ''}>
+      <span class="d1">${i === 0 ? 'วันนี้' : i === 1 ? 'พรุ่งนี้' : fmt1.format(d)}</span><span class="d2">${fmt2.format(d)}</span></label>`;
+  }
+  $('dateList').innerHTML = html;
+  $('otherDate').min = isoDate(today);
+}
+function renderSlots(){
+  const dur = S.dur ? S.dur.min : 60;
+  const now = new Date(), isToday = S.date === isoDate(now);
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const last = toMin(CLOSE) - dur;
+  let html = '', free = 0;
+  for (let m = toMin(OPEN); m <= toMin(CLOSE) - SLOT_STEP; m += SLOT_STEP){
+    const t = fromMin(m);
+    const off = (isToday && m <= nowMin) || m > last;
+    if (!off) free++;
+    if (off && S.time === t) S.time = null;
+    html += `<label class="slot"><input type="radio" name="time" value="${t}" ${off ? 'disabled' : ''} ${S.time === t ? 'checked' : ''}
+      aria-label="${t} น.${off ? ' (จองไม่ได้)' : ''}"><span class="ck" aria-hidden="true">✓</span>${t}</label>`;
+  }
+  $('slotList').innerHTML = html;
+  $('slotEmpty').hidden = free > 0;
+  $('slotEmpty').textContent = isToday ? 'วันนี้ไม่มีช่วงเวลาที่จองได้แล้ว กรุณาเลือกวันอื่น' : 'ไม่มีช่วงเวลาที่พอสำหรับระยะเวลานี้ กรุณาเลือกระยะเวลาที่สั้นลง';
+  updateBar();
+}
+function updateBar(){
+  const s = S.service, d = S.dur;
+  $('bbLabel').textContent = s ? [s.name, d && durLabel(d.min), S.time && (S.time + ' น.')].filter(Boolean).join(' · ') : 'ยังไม่ได้เลือกบริการ';
+  $('bbPrice').textContent = d ? (d.price ? baht(d.price) : 'ราคาตามหน้าร้าน') : (s ? 'เลือกระยะเวลา' : '—');
+}
+function showErr(key, show){ const el = document.querySelector(`[data-err="${key}"]`); if (el) el.hidden = !show; }
+
+/* ================== events ================== */
+const form = $('bookingForm');
+form.addEventListener('change', e => {
+  const t = e.target;
+  if (t.name === 'service'){ S.service = SERVICES[Number(t.value)]; S.dur = S.service.durations.length === 1 ? S.service.durations[0] : null; renderDurations(); renderSlots(); showErr('service', false); }
+  if (t.name === 'dur'){ S.dur = S.service.durations.find(d => d.min === Number(t.value)); renderSlots(); showErr('duration', false); }
+  if (t.name === 'doctor'){ S.doctor = t.value; showErr('doctor', false); }
+  if (t.name === 'date'){ S.date = t.value; $('otherDate').value = ''; renderSlots(); }
+  if (t.id === 'otherDate' && t.value){ S.date = t.value; document.querySelectorAll('input[name=date]').forEach(r => r.checked = (r.value === t.value)); renderSlots(); }
+  if (t.name === 'time'){ S.time = t.value; showErr('time', false); updateBar(); }
+});
+['customerName', 'customerPhone'].forEach(id => $(id).addEventListener('input', () => { showErr(id, false); $(id).classList.remove('invalid'); }));
+
+const cleanPhone = v => (v || '').replace(/\D/g, '');
+const isValidPhone = d => /^0\d{8,9}$/.test(d);
+const formatPhone = d => d.length === 10 ? d.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3') : d.length === 9 ? d.replace(/(\d{2})(\d{3})(\d{4})/, '$1-$2-$3') : d;
+
+function validate(){
+  const checks = [
+    ['service', !!S.service, 'svcList'], ['duration', !!S.dur, 'durList'], ['doctor', !!S.doctor, 'docList'],
+    ['time', !!(S.date && S.time), 'slotList'],
+    ['customerName', $('customerName').value.trim().length >= 2, 'customerName'],
+    ['customerPhone', isValidPhone(cleanPhone($('customerPhone').value)), 'customerPhone'],
+  ];
+  let first = null;
+  for (const [key, ok, elId] of checks){
+    showErr(key, !ok);
+    if (elId.startsWith('customer')) $(elId).classList.toggle('invalid', !ok);
+    if (!ok && !first) first = $(elId);
+  }
+  if (first){ first.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (first.focus) setTimeout(() => first.focus({ preventScroll: true }), 300); return false; }
+  return true;
+}
+
+function endTimeOf(start, durHrs){
+  // สูตรเดิมของระบบ
+  const [h, m] = start.split(':').map(Number);
+  const addedMinutes = Math.round((durHrs % 1) * 60), totalMinutes = m + addedMinutes;
+  const endHour = (h + Math.floor(durHrs) + Math.floor(totalMinutes / 60)) % 24;
+  return pad(endHour) + ':' + pad(totalMinutes % 60);
+}
+function thaiLongDate(iso){
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Intl.DateTimeFormat('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(y, m - 1, d));
+}
+function summaryHTML(extra){
+  const hrs = S.dur.min / 60, end = endTimeOf(S.time, hrs);
+  const rows = [
+    ['บริการ', S.service.name], ['ระยะเวลา', durLabel(S.dur.min)], ['หมอนวด', S.doctor],
+    ['วันที่', thaiLongDate(S.date)], ['เวลา', `${S.time}–${end} น.`],
+    ['ผู้จอง', $('customerName').value.trim()], ['เบอร์โทร', formatPhone(cleanPhone($('customerPhone').value))],
+    ...(extra || []),
+  ];
+  return rows.map(([k, v]) => `<div class="row"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join('')
+    + `<div class="row total"><span class="k">ราคา</span><span class="v">${S.dur.price ? baht(S.dur.price) : 'ราคาตามหน้าร้าน'}</span></div>`;
+}
+
+/* modal helpers */
+let lastFocus = null;
+function openModal(id){ lastFocus = document.activeElement; $(id).hidden = false; document.body.style.overflow = 'hidden'; const f = $(id).querySelector('button'); f && f.focus(); }
+function closeModal(id){ $(id).hidden = true; document.body.style.overflow = ''; lastFocus && lastFocus.focus && lastFocus.focus(); }
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => closeModal('reviewModal')));
+$('reviewModal').addEventListener('click', e => { if (e.target.id === 'reviewModal' && !$('confirmBtn').disabled) closeModal('reviewModal'); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('reviewModal').hidden && !$('confirmBtn').disabled) closeModal('reviewModal'); });
+
+$('bookBtn').addEventListener('click', () => {
+  if (!validate()) return;
+  $('rvSummary').innerHTML = summaryHTML();
+  $('rvError').hidden = true;
+  openModal('reviewModal');
+});
+
+$('overlapBack').addEventListener('click', () => { closeModal('overlapModal'); $('h-time').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+
+/* ================== ส่งการจอง (API เดิม) ================== */
+$('confirmBtn').addEventListener('click', async () => {
+  const btn = $('confirmBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> กำลังบันทึกการจอง...';
+  $('rvError').hidden = true;
+
+  if (!userLineId && typeof liff !== 'undefined'){
+    try{ if (liff.isLoggedIn()){ const p = await liff.getProfile(); if (p && p.userId) userLineId = p.userId; } }catch(e){}
+  }
+  const durationVal = S.dur.min / 60;
+  const name = $('customerName').value.trim();
+  const phone = formatPhone(cleanPhone($('customerPhone').value));
+  const payload = {
+    service: S.service.name,
+    serviceId: S.service.id || '',
+    price: S.dur.price || null,
+    doctor: S.doctor,
+    duration: durationVal,
+    date: S.date,
+    startTime: S.time,
+    endTime: endTimeOf(S.time, durationVal),
+    customerName: name,
+    customerPhone: phone,
+    customerInfo: name + " " + phone,
+    lineUserId: userLineId
+  };
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30000);
+  try{
+    const r = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload), signal: controller.signal });
+    clearTimeout(timer);
+    let res; try{ res = JSON.parse(await r.text()); }catch(e){ throw new Error('ระบบตอบกลับผิดรูปแบบ'); }
+
+    if (res.success){
+      closeModal('reviewModal');
+      $('doneRef').textContent = res.bookingId;
+      $('doneSummary').innerHTML = summaryHTML();
+      $('doneLineNote').textContent = userLineId ? 'ร้านส่งใบนัดเข้าแชต LINE แล้ว' : 'กรุณาบันทึกเลขอ้างอิงนี้ไว้';
+      $('main').hidden = true; $('bottombar').hidden = true; $('doneView').hidden = false;
+      window.scrollTo(0, 0);
+    }else if (res.isOverlapping){
+      closeModal('reviewModal');
+      $('overlapDoctorName').textContent = res.doctor || S.doctor;
+      const list = $('overlapTimeList'); list.innerHTML = '';
+      (res.bookedSlots || []).forEach(s => { const li = document.createElement('li'); li.textContent = s; list.appendChild(li); });
+      openModal('overlapModal');
+    }else{
+      showBookingError(res.error || 'ไม่ทราบสาเหตุ');
+    }
+  }catch(err){
+    clearTimeout(timer);
+    showBookingError(err.name === 'AbortError' ? 'ระบบตอบช้าเกินไป' : (err.message || String(err)), true);
+  }finally{
+    btn.disabled = false; btn.textContent = 'ยืนยันการจอง';
+  }
+});
+function showBookingError(msg, network){
+  const el = $('rvError');
+  el.innerHTML = `<div><strong>จองไม่สำเร็จ:</strong> ${esc(msg)}<br>${network
+    ? 'ตรวจสอบสัญญาณอินเทอร์เน็ตแล้วกด "ยืนยันการจอง" อีกครั้ง'
+    : 'ลองแก้ไขข้อมูลแล้วกดยืนยันอีกครั้ง'} หากยังไม่ได้ ติดต่อร้าน 083-897-4088</div>`;
+  el.hidden = false;
+}
+
+$('doneClose').addEventListener('click', () => {
+  try{ if (typeof liff !== 'undefined' && liff.isInClient()){ liff.closeWindow(); return; } }catch(e){}
+  location.href = location.pathname;   // เปิดในเบราว์เซอร์: กลับหน้าจองใหม่
+});
+
+/* ================== รับค่าจากหน้าเมนู ================== */
+function getMenuParams(){
+  const p = new URLSearchParams(location.search);
+  if (p.get('service') || p.get('svc_name')) return p;
+  try{
+    const state = new URL(START_URL).searchParams.get('liff.state');
+    if (state){ const q = state.includes('?') ? state.slice(state.indexOf('?') + 1) : state; return new URLSearchParams(q.split('#')[0]); }
+  }catch(e){}
+  return p;
+}
+function checkRadio(name, value){
+  const r = [...document.querySelectorAll(`input[name="${name}"]`)].find(x => x.value === String(value));
+  if (!r) return false;
+  r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); return true;
+}
+async function prefillFromMenu(){
+  const p = getMenuParams();
+  const svcId = p.get('service'), svcName = p.get('svc_name'), durMin = Number(p.get('dur'));
+  if (svcId || svcName){
+    let idx = SERVICES.findIndex(s => s.id && s.id === svcId);
+    if (idx < 0) idx = SERVICES.findIndex(s => norm(s.name) === norm(svcName));
+    if (idx < 0 && SERVICE_MAP[svcId]) idx = SERVICES.findIndex(s => s.name === SERVICE_MAP[svcId]);
+    if (idx >= 0){
+      checkRadio('service', idx);
+      if (durMin) checkRadio('dur', durMin);
+      setTimeout(() => $('h-doc').scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
+    }
+  }
+  try{
+    if (!$('customerName').value && typeof liff !== 'undefined' && liff.isLoggedIn()){
+      const prof = await liff.getProfile(); if (prof && prof.displayName) $('customerName').value = prof.displayName;
+    }
+  }catch(e){}
+}
+
+/* ================== LIFF ================== */
+async function initApp(){
+  if (typeof liff === 'undefined'){ setStatus('', 'เปิดนอก LINE — จองได้ แต่จะไม่ได้รับใบนัดทาง LINE'); return; }
+  try{
+    await Promise.race([
+      liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('LIFF init timeout')), 10000))
+    ]);
+    if (liff.isLoggedIn()){
+      const profile = await liff.getProfile();
+      if (profile && profile.userId){ userLineId = profile.userId; setStatus('ok', 'เชื่อมต่อ LINE แล้ว: ' + profile.displayName); }
+    }else if (liff.isInClient()){
+      liff.login();
+    }else{
+      setStatus('', 'เปิดนอก LINE — จองได้ แต่จะไม่ได้รับใบนัดทาง LINE');
+    }
+  }catch(err){
+    console.error('LIFF Error:', err);
+    setStatus('', 'เชื่อมต่อ LINE ไม่สำเร็จ — ยังจองได้ตามปกติ');
+  }
+}
+
+// วันนี้เลยเวลาจองแล้ว -> เริ่มที่พรุ่งนี้
+(function(){
+  const n = new Date(), lastStart = toMin(CLOSE) - 60;
+  const d = (n.getHours() * 60 + n.getMinutes() >= lastStart) ? new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1) : n;
+  S.date = isoDate(d);
+})();
+renderDoctors(); renderDates(); renderDurations(); renderSlots();
+Promise.allSettled([initApp(), loadServices()]).then(prefillFromMenu);
+</script>
+</body>
+</html>

@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>เมนูและบริการ · เส้นสาย Zensai Massage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  header.top{background:var(--c-bg)}
+  .tools{position:sticky;top:0;z-index:5;padding:var(--sp-3) 0 var(--sp-3);border-bottom:1px solid var(--c-line);background:var(--c-bg)}
+  .hello{font-size:var(--fs-sm);color:var(--c-text-2);margin-bottom:var(--sp-2)}
+  .search{display:flex;align-items:center;gap:var(--sp-2);min-height:var(--tap);padding:0 var(--sp-4);
+    background:var(--c-surface);border:1px solid var(--c-line);border-radius:var(--r-md)}
+  .search:focus-within{border-color:var(--c-primary);box-shadow:0 0 0 3px var(--c-primary-soft)}
+  .search input{border:0;outline:0;flex:1;min-width:0;font-size:var(--fs-md);background:transparent}
+  .tabs{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin-top:var(--sp-3)}
+  .tab{min-height:40px;padding:0 var(--sp-4);border-radius:var(--r-pill);border:1px solid var(--c-line);
+    background:var(--c-surface);color:var(--c-text);font-size:var(--fs-sm);cursor:pointer}
+  .tab[aria-selected="true"]{background:var(--c-primary);border-color:var(--c-primary);color:#fff;font-weight:600}
+
+  main{padding-top:var(--sp-4);padding-bottom:var(--sp-6);display:flex;flex-direction:column;gap:var(--sp-3)}
+  .promo{display:flex;gap:var(--sp-3);align-items:center;width:100%;text-align:left;cursor:pointer;
+    padding:var(--sp-4);border-radius:var(--r-lg);border:0;background:var(--c-primary);color:#fff}
+  .promo .lbl{display:inline-block;font-size:var(--fs-xs);border:1px solid var(--c-gold);border-radius:var(--r-pill);padding:0 10px;margin-bottom:4px}
+  .promo strong{display:block;font-size:var(--fs-lg)}
+  .promo .sub{font-size:var(--fs-sm);opacity:.9}
+  .promo .go{flex:none;min-height:44px;padding:0 var(--sp-4);border-radius:var(--r-md);background:#fff;color:var(--c-primary);font-weight:600;display:flex;align-items:center}
+  h2.sec{font-size:var(--fs-lg);margin-top:var(--sp-2)}
+
+  .svc{display:flex;gap:var(--sp-3);padding:var(--sp-4);width:100%;text-align:left;cursor:pointer;color:inherit}
+  .svc:hover{border-color:#D6CDBB}
+  .thumb{width:88px;height:88px;flex:none;border-radius:var(--r-md);object-fit:cover;background:var(--c-muted-bg)}
+  .info{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--sp-1)}
+  .title{display:flex;gap:var(--sp-2);align-items:center;flex-wrap:wrap}
+  .title strong{font-size:var(--fs-md)}
+  .badge{font-size:var(--fs-xs);padding:1px 10px;border-radius:var(--r-pill);background:var(--c-primary-soft);color:var(--c-primary);font-weight:600}
+  .desc{font-size:var(--fs-sm);color:var(--c-text-2)}
+  .prices{display:flex;gap:var(--sp-2);flex-wrap:wrap;margin-top:2px}
+  .prices span{font-size:var(--fs-sm);padding:2px 10px;border-radius:var(--r-sm);background:var(--c-bg);border:1px solid var(--c-line)}
+  .prices b{color:var(--c-primary)}
+  .empty{text-align:center;color:var(--c-text-2);padding:var(--sp-8) 0}
+
+  .overlay{position:fixed;inset:0;background:rgba(41,45,32,.45);display:none;z-index:20}
+  .overlay.open{display:block}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--c-bg);border-radius:20px 20px 0 0;
+    max-height:90vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .25s ease;max-width:var(--maxw);margin:0 auto}
+  .sheet.open{transform:none}
+  .sheet .hero{height:200px;flex:none;border-radius:20px 20px 0 0;overflow:hidden;background:var(--c-muted-bg)}
+  .sheet .hero img{width:100%;height:100%;object-fit:cover;display:block}
+  .sheet .head{display:flex;justify-content:flex-end;padding:var(--sp-3) var(--sp-3) 0}
+  .sheet .body{overflow-y:auto;padding:0 var(--sp-4) var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-4)}
+  .sheet h3{font-size:var(--fs-xl)}
+  .sheet p.d{color:var(--c-text-2)}
+  fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
+  legend{font-weight:600;margin-bottom:var(--sp-2);padding:0}
+  .opt span.n{flex:1}
+  .opt strong{color:var(--c-primary)}
+  .chips{display:flex;gap:var(--sp-2);flex-wrap:wrap}
+  .chip{min-height:44px;padding:0 var(--sp-4);border-radius:var(--r-pill);border:1px solid var(--c-line);background:var(--c-surface);cursor:pointer}
+  .chip[aria-pressed="true"]{background:var(--c-primary);border-color:var(--c-primary);color:#fff}
+  .pts{display:flex;gap:var(--sp-2);align-items:center;padding:var(--sp-3) var(--sp-4);border-radius:var(--r-md);background:var(--c-surface);border:1px solid var(--c-line);font-size:var(--fs-sm)}
+  .pts svg{color:var(--c-gold);flex:none}
+  .sheet footer{flex:none;padding:var(--sp-3) var(--sp-4) calc(var(--sp-4) + env(safe-area-inset-bottom));background:var(--c-surface);
+    border-top:1px solid var(--c-line);display:flex;align-items:center;gap:var(--sp-3)}
+  .sheet footer .sum{flex:1;min-width:0;display:flex;flex-direction:column}
+  .sheet footer .sum small{font-size:var(--fs-xs);color:var(--c-text-2)}
+  .sheet footer .sum strong{font-size:var(--fs-lg)}
+  .sheet footer .btn{min-width:132px;min-height:52px;font-size:var(--fs-lg)}
+
+  .toast{position:fixed;left:50%;bottom:calc(110px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--c-text);color:#fff;
+    padding:var(--sp-3) var(--sp-4);border-radius:var(--r-md);font-size:var(--fs-sm);z-index:30;display:none;max-width:90vw;text-align:center}
+  .toast.show{display:block}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brandbar">
+    <div class="container">
+      <img class="brand-logo" src="logo.png" alt="โลโก้เส้นสาย" onerror="this.remove()">
+      <div class="brand-text"><span class="brand-th">เส้นสาย</span><span class="brand-en">Zensai Massage · นวดเพื่อสุขภาพ</span></div>
+    </div>
+    <div class="brand-line"></div>
+  </div>
+  <figure class="shop-hero"><img src="shop.jpg" alt="หน้าร้านและเคาน์เตอร์ต้อนรับของร้านเส้นสาย" onerror="this.parentNode.remove()"></figure>
+</header>
+<div class="tools"><div class="container">
+    <h1 class="sr-only">เมนูและบริการ</h1>
+    <div class="hello" id="hello" hidden></div>
+    <label class="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="color:var(--c-text-2)"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <span class="sr-only">ค้นหาบริการ</span>
+      <input id="q" type="search" placeholder="ค้นหา เช่น นวดเท้า, คอ บ่า ไหล่" autocomplete="off">
+    </label>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="หมวดบริการ"></nav>
+  </div></div>
+
+<main class="container" id="list" aria-live="polite">
+  <div class="skeleton" style="height:120px"></div><div class="skeleton" style="height:120px"></div><div class="skeleton" style="height:120px"></div>
+</main>
+<footer class="site-footer container" aria-label="ข้อมูลร้าน" style="margin-top:0">
+  <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>เปิดทุกวัน 10:00–22:00 น.</div>
+  <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg><a href="tel:0838974088">083-897-4088</a></div>
+  <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-4.9A8.5 8.5 0 1 1 21 11.5z"/></svg><a href="https://lin.ee/VCzZf3y">แชต LINE ร้าน</a></div>
+</footer>
+
+<div class="overlay" id="overlay"></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sTitle" hidden>
+  <div class="hero" id="sHero" hidden><div id="sMedia" style="height:100%"></div></div>
+  <div class="head">
+    <button class="icon-btn" id="sClose" aria-label="ปิด">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="body">
+    <div>
+      <h3 id="sTitle"></h3>
+      <p class="d" id="sDesc"></p>
+    </div>
+    <fieldset id="sDur"><legend>เลือกระยะเวลา</legend></fieldset>
+    <fieldset id="sOptWrap" hidden><legend id="sOptTitle">ตัวเลือก</legend><div class="chips" id="sOpt"></div></fieldset>
+    <div class="pts" id="sPtsRow">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M7 12h10"/></svg>
+      <span>รับ <strong id="sPts">0</strong> แต้ม หลังใช้บริการ</span>
+    </div>
+  </div>
+  <footer>
+    <div class="sum"><small id="sSumLabel"></small><strong id="sSumPrice"></strong></div>
+    <button class="btn btn-primary" id="sBook">จองคิว</button>
+  </footer>
+</section>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ================== ตั้งค่า ================== */
+const CONFIG = {
+  LIFF_ID: 'YOUR_LIFF_ID',      // จาก LINE Developers > LIFF
+  SHEET_CSV_URL: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT_Zn71o_I7FgMjcHRCRzixSEFGeyavFXZJ57lqwxLIShnKe5nII9MDj4HGU1UefXMEYSWHhbrmtxed/pubhtml?gid=1917944634&single=true',  // ลิงก์ Google Sheet (pubhtml / edit / csv ใช้ได้หมด)
+  BOOKING_URL: 'https://liff.line.me/2012242488-9FyrgqQd/',  // หน้าจองคิว (ว่าง = ส่งข้อความจองเข้าแชตแทน)
+  POINTS_PER_100_BAHT: 10,      // อัตราแต้ม: ทุก 100 บาท ได้กี่แต้ม
+};
+
+/* ข้อมูลตัวอย่าง: 1 แถว = 1 บริการ x 1 ระยะเวลา (ราคาเป็นตัวอย่าง แก้ใน Sheet) */
+const SAMPLE_CSV = `service_id,category,name,description,duration_min,price,image_url,badge,options_title,options,active,sort
+combo1,แพ็กเกจ,คอมโบ เท้า 30 + ไทย 60,คลายเท้าก่อน แล้วต่อด้วยนวดไทยทั้งตัว,90,0,,โปร,,,TRUE,1
+thai,นวดไทย,นวดแผนไทย,คลายกล้ามเนื้อทั้งตัว ยืดเส้น กดจุด,60,0,,ขายดี,,,TRUE,2
+thai,นวดไทย,นวดแผนไทย,,90,0,,,,,TRUE,2
+thai,นวดไทย,นวดแผนไทย,,120,0,,,,,TRUE,2
+oil,น้ำมัน/อโรมา,นวดน้ำมันอโรมา,นวดด้วยน้ำมันหอมระเหย ผ่อนคลาย หลับสบาย,60,0,,,กลิ่นน้ำมัน,ลาเวนเดอร์|ตะไคร้|มะลิ|ไม่มีกลิ่น,TRUE,3
+oil,น้ำมัน/อโรมา,นวดน้ำมันอโรมา,,90,0,,,,,TRUE,3
+foot,นวดเท้า,นวดเท้า,กดจุดฝ่าเท้า ลดอาการเมื่อยล้า,30,0,,,,,TRUE,4
+foot,นวดเท้า,นวดเท้า,,60,0,,,,,TRUE,4
+office,คอ บ่า ไหล่,นวดคอ บ่า ไหล่ (ออฟฟิศซินโดรม),เน้นจุดตึงจากการนั่งทำงานนาน,30,0,,,,,TRUE,5
+office,คอ บ่า ไหล่,นวดคอ บ่า ไหล่ (ออฟฟิศซินโดรม),,60,0,,,,,TRUE,5
+stone,ประคบ/หินร้อน,ประคบสมุนไพร / Hot Stone,ความร้อนช่วยคลายจุดตึงลึก,90,0,,,,,TRUE,6`;
+
+/* ================== state ================== */
+let SERVICES = [];   // [{id,category,name,desc,image,badge,optTitle,options[],sort,durations:[{min,price}]}]
+let currentCat = 'ทั้งหมด';
+let current = null, chosenDur = null, chosenOpt = null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const baht = n => n > 0 ? '฿' + Number(n).toLocaleString('th-TH') : 'สอบถามราคา';
+const points = price => Math.floor(price / 100) * CONFIG.POINTS_PER_100_BAHT;
+const LOTUS = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#8A6A2E" stroke-width="1.5" aria-hidden="true"><path d="M12 20c-4 0-8-3-9-7 3 0 6 1 9 4 3-3 6-4 9-4-1 4-5 7-9 7z"/><path d="M12 17c-2-2-3-5-3-8 1.5 1 2.5 2 3 3 .5-1 1.5-2 3-3 0 3-1 6-3 8z"/></svg>';
+
+/* ================== CSV ================== */
+function parseCSV(text){
+  const rows=[]; let row=[], f='', q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; }
+    else if(c==='"') q=true;
+    else if(c===','){ row.push(f); f=''; }
+    else if(c==='\n'||c==='\r'){ if(c==='\r'&&text[i+1]==='\n') i++; row.push(f); rows.push(row); row=[]; f=''; }
+    else f+=c;
+  }
+  if(f||row.length){ row.push(f); rows.push(row); }
+  const head = rows.shift().map(h=>h.trim().toLowerCase());
+  return rows.filter(r=>r.some(v=>v.trim())).map(r=>Object.fromEntries(head.map((h,i)=>[h,(r[i]??'').trim()])));
+}
+
+function buildServices(rows){
+  const map = new Map();
+  for(const r of rows){
+    if(String(r.active).toUpperCase()==='FALSE' || !r.name) continue;
+    const id = r.service_id || r.name;
+    if(!map.has(id)) map.set(id,{id,category:'',name:'',desc:'',image:'',badge:'',optTitle:'',options:[],sort:999,durations:[]});
+    const s = map.get(id);
+    s.category ||= r.category; s.name ||= r.name; s.desc ||= r.description;
+    s.image ||= r.image_url; s.badge ||= r.badge; s.optTitle ||= r.options_title;
+    if(!s.options.length && r.options) s.options = r.options.split('|').map(x=>x.trim()).filter(Boolean);
+    if(r.sort) s.sort = Math.min(s.sort, Number(r.sort)||999);
+    const min = Number(r.duration_min), price = Number(String(r.price).replace(/[^\d.]/g,''))||0;
+    if(min) s.durations.push({min, price});
+  }
+  return [...map.values()].map(s=>(s.durations.sort((a,b)=>a.min-b.min), s)).sort((a,b)=>a.sort-b.sort);
+}
+
+/* รับได้ทั้งลิงก์แชร์ (/edit), ลิงก์ publish (pubhtml) และลิงก์ CSV ตรง */
+function toCsvUrl(url){
+  const pub = url.match(/\/spreadsheets\/d\/e\/([\w-]+)\//);
+  if(pub){
+    const gid = (url.match(/[?&#]gid=(\d+)/)||[])[1];
+    return `https://docs.google.com/spreadsheets/d/e/${pub[1]}/pub?output=csv${gid?`&gid=${gid}`:''}`;
+  }
+  const doc = url.match(/\/spreadsheets\/d\/([\w-]+)/);
+  if(doc){
+    const gid = (url.match(/[?&#]gid=(\d+)/)||[])[1] || '0';
+    return `https://docs.google.com/spreadsheets/d/${doc[1]}/gviz/tq?tqx=out:csv&gid=${gid}`;
+  }
+  return url;
+}
+
+async function loadData(){
+  let rows = parseCSV(SAMPLE_CSV);
+  if(CONFIG.SHEET_CSV_URL){
+    try{
+      const url = toCsvUrl(CONFIG.SHEET_CSV_URL);
+      const res = await fetch(url + (url.includes('?')?'&':'?') + 't=' + Date.now());
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const text = (await res.text()).replace(/^﻿/, '');
+      if(/^\s*</.test(text)) throw new Error('ได้หน้าเว็บกลับมา ไม่ใช่ CSV (เช็กว่าแชร์ Sheet แบบ "ทุกคนที่มีลิงก์" แล้ว)');
+      const sheetRows = parseCSV(text);
+      if(!sheetRows.some(r => r.name && r.duration_min))
+        throw new Error('ไม่พบคอลัมน์ name / duration_min ในแถวแรกของ Sheet');
+      rows = sheetRows;
+    }catch(e){
+      console.warn('Sheet load failed:', e);
+      toast('โหลดเมนูจาก Sheet ไม่สำเร็จ: ' + e.message);
+    }
+  }
+  SERVICES = buildServices(rows);
+}
+
+/* ================== render ================== */
+function renderTabs(){
+  const cats = ['ทั้งหมด', ...new Set(SERVICES.map(s=>s.category).filter(Boolean))];
+  $('tabs').innerHTML = cats.map(c=>`<button class="tab" role="tab" aria-selected="${c===currentCat}" data-cat="${esc(c)}">${esc(c)}</button>`).join('');
+}
+
+function priceChips(s){ return s.durations.map(d=>`<span>${d.min} นาที · <b>${d.price>0?baht(d.price):'สอบถาม'}</b></span>`).join(''); }
+function thumb(s){ return s.image ? `<img class="thumb" src="${esc(s.image)}" alt="" loading="lazy">` : ''; }
+
+function renderList(){
+  const q = $('q').value.trim().toLowerCase();
+  const items = SERVICES.filter(s =>
+    (currentCat==='ทั้งหมด' || s.category===currentCat) &&
+    (!q || (s.name+' '+s.desc+' '+s.category).toLowerCase().includes(q)));
+  const promo = (currentCat==='ทั้งหมด' && !q) ? SERVICES.find(s=>s.badge==='โปร') : null;
+  let html = '';
+  if(promo){
+    const d = promo.durations[0] || {min:0,price:0};
+    html += `<button class="promo" data-id="${esc(promo.id)}">
+      <div style="flex:1;min-width:0"><span class="lbl">โปรโมชั่น</span><strong>${esc(promo.name)}</strong>
+      <span class="sub">${d.min} นาที · ${baht(d.price)}${points(d.price)>0?` · ได้ ${points(d.price)} แต้ม`:''}</span></div>
+      <span class="go">ดูเลย</span></button>`;
+  }
+  const rest = items.filter(s=>s!==promo);
+  if(rest.length) html += `<h2 class="sec">${currentCat==='ทั้งหมด'?'บริการทั้งหมด':esc(currentCat)}</h2>`;
+  html += rest.map(s=>`<button class="card svc" data-id="${esc(s.id)}">
+      ${thumb(s)}
+      <div class="info">
+        <div class="title"><strong>${esc(s.name)}</strong>${s.badge?`<span class="badge">${esc(s.badge)}</span>`:''}</div>
+        ${s.desc?`<span class="desc">${esc(s.desc)}</span>`:''}
+        <div class="prices">${priceChips(s)}</div>
+      </div></button>`).join('');
+  if(!items.length && !promo) html = `<div class="empty">ไม่พบบริการที่ค้นหา</div>`;
+  $('list').innerHTML = html;
+}
+
+/* ================== detail sheet ================== */
+function openSheet(id){
+  current = SERVICES.find(s=>s.id===id); if(!current) return;
+  chosenDur = current.durations[0] || null;
+  chosenOpt = current.options[0] || null;
+  $('sTitle').textContent = current.name;
+  $('sDesc').textContent = current.desc || '';
+  $('sMedia').innerHTML = current.image ? `<img src="${esc(current.image)}" alt="">` : '';
+  $('sHero').hidden = !current.image;
+  $('sDur').innerHTML = '<legend>เลือกระยะเวลา</legend>' + current.durations.map((d,i)=>`
+    <label class="choice opt"><input type="radio" name="dur" value="${i}" ${i===0?'checked':''}><span class="tick"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg></span>
+    <span class="n">${d.min} นาที</span><strong>${d.price>0?baht(d.price):'สอบถามราคา'}</strong></label>`).join('');
+  $('sOptWrap').hidden = !current.options.length;
+  $('sOptTitle').textContent = current.optTitle || 'ตัวเลือก';
+  $('sOpt').innerHTML = current.options.map((o,i)=>`<button type="button" class="chip" aria-pressed="${i===0}" data-opt="${esc(o)}">${esc(o)}</button>`).join('');
+  updateSummary();
+  const sheet = $('sheet');
+  sheet.hidden = false; $('overlay').classList.add('open');
+  requestAnimationFrame(()=>sheet.classList.add('open'));
+  $('sClose').focus();
+  document.body.style.overflow='hidden';
+}
+function closeSheet(){
+  const sheet = $('sheet');
+  sheet.classList.remove('open'); $('overlay').classList.remove('open');
+  document.body.style.overflow='';
+  setTimeout(()=>{ sheet.hidden = true; }, 250);
+}
+function updateSummary(){
+  if(!chosenDur) return;
+  $('sSumLabel').textContent = `${chosenDur.min} นาที` + (chosenOpt ? ` · ${chosenOpt}` : '');
+  $('sSumPrice').textContent = baht(chosenDur.price);
+  $('sPts').textContent = points(chosenDur.price);
+  $('sPtsRow').hidden = points(chosenDur.price) <= 0;
+}
+
+/* ================== จองคิว ================== */
+async function book(){
+  if(!current || !chosenDur) return;
+  const p = new URLSearchParams({service: current.id, svc_name: current.name, dur: chosenDur.min, price: chosenDur.price});
+  if(chosenOpt) p.set('opt', chosenOpt);
+  if(CONFIG.BOOKING_URL){
+    location.href = CONFIG.BOOKING_URL + (CONFIG.BOOKING_URL.includes('?')?'&':'?') + p;
+    return;
+  }
+  const text = `ขอจองคิว: ${current.name} ${chosenDur.min} นาที` + (chosenOpt?` (${chosenOpt})`:'') + ` · ${baht(chosenDur.price)}`;
+  if(window.liff && liffReady && liff.isInClient()){
+    const btn = $('sBook'); btn.disabled = true;
+    try{
+      await liff.sendMessages([{type:'text', text}]);
+      liff.closeWindow();
+    }catch(e){ toast('ส่งข้อความไม่สำเร็จ กรุณาลองใหม่'); btn.disabled = false; }
+  }else{
+    toast('(โหมดทดสอบ) จะส่งข้อความ: ' + text);
+  }
+}
+
+/* ================== misc ================== */
+let toastTimer;
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),3000); }
+
+$('tabs').addEventListener('click', e=>{ const b=e.target.closest('.tab'); if(!b) return; currentCat=b.dataset.cat; renderTabs(); renderList(); });
+$('q').addEventListener('input', renderList);
+$('list').addEventListener('click', e=>{ const b=e.target.closest('[data-id]'); if(b) openSheet(b.dataset.id); });
+$('sDur').addEventListener('change', e=>{ chosenDur = current.durations[Number(e.target.value)]; updateSummary(); });
+$('sOpt').addEventListener('click', e=>{ const b=e.target.closest('.chip'); if(!b) return;
+  chosenOpt=b.dataset.opt; $('sOpt').querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed', c===b)); updateSummary(); });
+$('sClose').addEventListener('click', closeSheet);
+$('overlay').addEventListener('click', closeSheet);
+$('sheet').addEventListener('keydown', e=>{ if(e.key==='Escape') closeSheet(); });
+$('sBook').addEventListener('click', book);
+
+let liffReady = false;
+async function initLiff(){
+  if(!window.liff || !CONFIG.LIFF_ID || CONFIG.LIFF_ID==='YOUR_LIFF_ID') return;
+  try{
+    await liff.init({ liffId: CONFIG.LIFF_ID });
+    liffReady = true;
+    if(liff.isLoggedIn()){
+      const prof = await liff.getProfile();
+      const h=$('hello'); h.textContent = `สวัสดีค่ะ คุณ${prof.displayName} เลือกบริการที่ต้องการได้เลย`; h.hidden=false;
+    }
+  }catch(e){ console.warn('LIFF init failed', e); }
+}
+
+(async function start(){
+  await Promise.all([initLiff(), loadData()]);
+  const qs = new URLSearchParams(location.search);
+  if(qs.get('cat')) currentCat = qs.get('cat');      // เปิดตรงหมวด: ?cat=นวดเท้า
+  renderTabs(); renderList();
+  if(qs.get('service')) openSheet(qs.get('service')); // เปิดตรงบริการ: ?service=oil
+})();
+</script>
+</body>
+</html>
