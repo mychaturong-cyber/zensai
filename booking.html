@@ -339,10 +339,14 @@ function renderDoctors(){
   const wd = S.date ? weekdayOf(S.date) : -1;
   const workingToday = S.date && S.date === CHECKED_IN.date ? CHECKED_IN.names : [];
   const onLeave = (S.date && LEAVE[S.date]) || [];
-  const off = DOCTORS.filter(d => ((DOCTOR_OFF[d] || []).includes(wd) || onLeave.includes(d)) && !workingToday.includes(d));
+  // วันนี้: ถ้ามีหมอเช็กอินแล้ว แสดงเฉพาะคนที่เช็กอิน
+  const notInYet = workingToday.length ? DOCTORS.filter(d => !workingToday.includes(d)) : [];
+  const off = DOCTORS.filter(d => notInYet.includes(d) ||
+    (((DOCTOR_OFF[d] || []).includes(wd) || onLeave.includes(d)) && !workingToday.includes(d)));
   const avail = DOCTORS.filter(d => !off.includes(d));
   if (S.doctor && S.doctor !== ANY_DOCTOR && off.includes(S.doctor)){
-    $('docOffNote').textContent = `${S.doctor} ${onLeave.includes(S.doctor) ? 'ลาวันที่เลือก' : 'หยุดวัน' + DAY_TH[wd]} กรุณาเลือกหมอใหม่ หรือเลือก "ให้ร้านจัดให้"`;
+    const why = notInYet.includes(S.doctor) ? 'ยังไม่ได้เข้างานวันนี้' : onLeave.includes(S.doctor) ? 'ลาวันที่เลือก' : 'หยุดวัน' + DAY_TH[wd];
+    $('docOffNote').textContent = `${S.doctor} ${why} กรุณาเลือกหมอใหม่ หรือเลือก "ให้ร้านจัดให้"`;
     $('docOffNote').hidden = false; S.doctor = null;
   } else if (off.length){
     $('docOffNote').textContent = `วันที่เลือกไม่มาทำงาน: ${off.join(', ')}`;
