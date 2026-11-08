@@ -325,8 +325,12 @@ function renderDurations(){
     <label class="choice compact"><input type="radio" name="dur" value="${d.min}" ${S.dur && S.dur.min === d.min ? 'checked' : ''}>${TICK}
       <span class="name">${durLabel(d.min)}</span><span class="price">${d.price ? baht(d.price) : 'ราคาตามหน้าร้าน'}</span></label>`).join('');
 }
+const ANY_DOCTOR = 'ให้ร้านจัดให้';
 function renderDoctors(){
-  $('docList').innerHTML = DOCTORS.map(d => `
+  $('docList').innerHTML = `
+    <label class="choice" style="grid-column:1/-1"><input type="radio" name="doctor" value="${ANY_DOCTOR}">${TICK}
+      <span class="body"><span class="name">ไม่ระบุหมอ ให้ร้านจัดให้</span><span class="meta">ร้านเลือกหมอที่ว่างในเวลาที่คุณจอง</span></span></label>`
+    + DOCTORS.map(d => `
     <label class="choice"><input type="radio" name="doctor" value="${esc(d)}">${TICK}<span class="body"><span class="name">${esc(d)}</span></span></label>`).join('');
 }
 function renderDates(){
@@ -416,7 +420,7 @@ function thaiLongDate(iso){
 function summaryHTML(extra){
   const hrs = S.dur.min / 60, end = endTimeOf(S.time, hrs);
   const rows = [
-    ['บริการ', S.service.name], ['ระยะเวลา', durLabel(S.dur.min)], ['หมอนวด', S.doctor],
+    ['บริการ', S.service.name], ['ระยะเวลา', durLabel(S.dur.min)], ['หมอนวด', S.doctor === ANY_DOCTOR ? 'ไม่ระบุ (ร้านจัดให้)' : S.doctor],
     ['วันที่', thaiLongDate(S.date)], ['เวลา', `${S.time}–${end} น.`],
     ['ผู้จอง', $('customerName').value.trim()], ['เบอร์โทร', formatPhone(cleanPhone($('customerPhone').value))],
     ...(extra || []),
@@ -477,6 +481,7 @@ $('confirmBtn').addEventListener('click', async () => {
     let res; try{ res = JSON.parse(await r.text()); }catch(e){ throw new Error('ระบบตอบกลับผิดรูปแบบ'); }
 
     if (res.success){
+      if (res.autoAssigned && res.doctor) S.doctor = res.doctor + ' (ร้านจัดให้)';
       closeModal('reviewModal');
       $('doneRef').textContent = res.bookingId;
       $('doneSummary').innerHTML = summaryHTML();
@@ -493,7 +498,10 @@ $('confirmBtn').addEventListener('click', async () => {
       (res.bookedSlots || []).forEach(s => { const li = document.createElement('li'); li.textContent = s; list.appendChild(li); });
       openModal('overlapModal');
     }else{
-      showBookingError(res.error || 'ไม่ทราบสาเหตุ');
+      if (res.noDoctorFree){
+        $('rvError').innerHTML = `<div><strong>เวลานี้หมอไม่ว่างทุกท่าน</strong><br>กรุณากด "แก้ไขข้อมูล" แล้วเลือกเวลาอื่น</div>`;
+        $('rvError').hidden = false;
+      } else showBookingError(res.error || 'ไม่ทราบสาเหตุ');
     }
   }catch(err){
     clearTimeout(timer);
