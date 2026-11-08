@@ -155,7 +155,7 @@
         <span><i class="sw sel"></i>✓ เลือกแล้ว</span>
         <span><i class="sw off"></i><s>จองไม่ได้</s></span>
       </div>
-      <p class="note">เวลาที่แสดงเป็นช่วงเวลาทำการ ระบบจะตรวจคิวของหมออีกครั้งเมื่อกดยืนยัน</p>
+      <p class="note" id="slotNote">เวลาที่แสดงเป็นช่วงเวลาทำการ ระบบจะตรวจคิวของหมออีกครั้งเมื่อกดยืนยัน</p>
       <p class="err" data-err="time" hidden>กรุณาเลือกเวลาเริ่ม</p>
     </section>
 
@@ -306,6 +306,7 @@ async function loadCatalog(){
     SERVICES = FALLBACK_SERVICES.map(n => ({ id: '', name: n, durations: FALLBACK_DURATIONS.map(min => ({ min, price: 0 })) }));
   applyShopInfo();
   renderServices(); renderDoctors(); renderSlots();
+  loadBusy(S.date);
 }
 
 /* ================== render ================== */
@@ -332,7 +333,25 @@ function renderDurations(){
 const ANY_DOCTOR = 'ให้ร้านจัดให้';
 let DOCTOR_OFF = {};
 let CHECKED_IN = { date: '', names: [] };
-let LEAVE = {};   // { "yyyy-mm-dd": [ชื่อหมอที่ลา] } จากแท็บ วันลา   // หมอที่เช็กอินวันนี้ (มาทำงานแม้ตรงกับวันหยุด)   // { ชื่อหมอ: [เลขวันหยุด 0=อา..6=ส] } จากคอลัมน์ "วันหยุด" ในชีตหมอ
+let LEAVE = {};
+let AVAIL_DOCS = [];   // หมอที่มาทำงานในวันที่เลือก
+const BUSY = {};       // { "yyyy-mm-dd": { busy: {หมอ: [[เริ่ม,จบ],...]}, buffer } | "loading" | "failed" }
+async function loadBusy(date, force){
+  if (!date) return;
+  if (force) delete BUSY[date];
+  if (BUSY[date]) { renderSlots(); return; }
+  BUSY[date] = 'loading'; renderSlots();
+  try{
+    const r = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'slots', date }) });
+    const res = await r.json();
+    if (!res.success) throw new Error(res.error);
+    BUSY[date] = { busy: res.busy || {}, buffer: Number(res.buffer) || 0 };
+  }catch(e){ console.warn('โหลดคิวว่างไม่ได้:', e); BUSY[date] = 'failed'; }
+  if (S.date === date) renderSlots();
+}
+function doctorFree(info, doc, start, dur){
+  return !(info.busy[doc] || []).some(([s, e]) => start < e + info.buffer && start + dur + info.buffer > s);
+}   // { "yyyy-mm-dd": [ชื่อหมอที่ลา] } จากแท็บ วันลา   // หมอที่เช็กอินวันนี้ (มาทำงานแม้ตรงกับวันหยุด)   // { ชื่อหมอ: [เลขวันหยุด 0=อา..6=ส] } จากคอลัมน์ "วันหยุด" ในชีตหมอ
 const DAY_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 function weekdayOf(iso){ const [y,m,d] = iso.split('-').map(Number); return new Date(y, m - 1, d).getDay(); }
 function renderDoctors(){
@@ -344,6 +363,7 @@ function renderDoctors(){
   const off = DOCTORS.filter(d => notInYet.includes(d) ||
     (((DOCTOR_OFF[d] || []).includes(wd) || onLeave.includes(d)) && !workingToday.includes(d)));
   const avail = DOCTORS.filter(d => !off.includes(d));
+  AVAIL_DOCS = avail;
   if (S.doctor && S.doctor !== ANY_DOCTOR && off.includes(S.doctor)){
     const why = notInYet.includes(S.doctor) ? 'ยังไม่ได้เข้างานวันนี้' : onLeave.includes(S.doctor) ? 'ลาวันที่เลือก' : 'หยุดวัน' + DAY_TH[wd];
     $('docOffNote').textContent = `${S.doctor} ${why} กรุณาเลือกหมอใหม่ หรือเลือก "ให้ร้านจัดให้"`;
@@ -377,18 +397,30 @@ function renderSlots(){
   const now = new Date(), isToday = S.date === isoDate(now);
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const last = toMin(CFG.closeTime) - dur, step = Number(CFG.slotStep) || 30;
-  let html = '', free = 0;
+  const info = BUSY[S.date];
+  const known = info && typeof info === 'object';
+  const specific = S.doctor && S.doctor !== ANY_DOCTOR;
+  let html = '', free = 0, full = 0;
   for (let m = toMin(CFG.openTime); m <= toMin(CFG.closeTime) - step; m += step){
     const t = fromMin(m);
-    const off = (isToday && m <= nowMin) || m > last;
-    if (!off) free++;
+    const closed = (isToday && m <= nowMin) || m > last;
+    const isFull = !closed && known && (specific ? !doctorFree(info, S.doctor, m, dur)
+                                                 : !AVAIL_DOCS.some(d => doctorFree(info, d, m, dur)));
+    const off = closed || isFull;
+    if (!off) free++; if (isFull) full++;
     if (off && S.time === t) S.time = null;
     html += `<label class="slot"><input type="radio" name="time" value="${t}" ${off ? 'disabled' : ''} ${S.time === t ? 'checked' : ''}
-      aria-label="${t} น.${off ? ' (จองไม่ได้)' : ''}"><span class="ck" aria-hidden="true">✓</span>${t}</label>`;
+      aria-label="${t} น.${isFull ? ' (คิวเต็ม)' : closed ? ' (จองไม่ได้)' : ''}"><span class="ck" aria-hidden="true">✓</span>${t}</label>`;
   }
   $('slotList').innerHTML = html;
   $('slotEmpty').hidden = free > 0;
-  $('slotEmpty').textContent = isToday ? 'วันนี้ไม่มีช่วงเวลาที่จองได้แล้ว กรุณาเลือกวันอื่น' : 'ไม่มีช่วงเวลาที่พอสำหรับระยะเวลานี้ กรุณาเลือกระยะเวลาที่สั้นลง';
+  const who = specific ? S.doctor : 'หมอทุกท่าน';
+  $('slotNote').textContent = (S.dur ? `นวด ${durLabel(dur)} ต้องเริ่มไม่เกิน ${fromMin(last)} น. เพื่อให้จบก่อนร้านปิด ${CFG.closeTime} น. ` : '')
+    + (info === 'loading' ? 'กำลังตรวจคิวว่าง…'
+       : known ? (full ? `ช่องที่ขีดฆ่าคือเวลาที่${who}ไม่ว่าง หรือเกินเวลาปิดร้าน` : '')
+       : 'ระบบจะตรวจคิวของหมออีกครั้งเมื่อกดยืนยัน');
+  $('slotEmpty').textContent = full ? `${specific ? S.doctor + ' ' : ''}คิวเต็มทั้งวันสำหรับระยะเวลานี้ ลองเลือก${specific ? 'หมอท่านอื่น "ให้ร้านจัดให้" หรือ' : ''}วันอื่น`
+    : isToday ? 'วันนี้ไม่มีช่วงเวลาที่จองได้แล้ว กรุณาเลือกวันอื่น' : 'ไม่มีช่วงเวลาที่พอสำหรับระยะเวลานี้ กรุณาเลือกระยะเวลาที่สั้นลง';
   updateBar();
 }
 function updateBar(){
@@ -404,9 +436,9 @@ form.addEventListener('change', e => {
   const t = e.target;
   if (t.name === 'service'){ S.service = SERVICES[Number(t.value)]; S.dur = S.service.durations.length === 1 ? S.service.durations[0] : null; renderDurations(); renderSlots(); showErr('service', false); }
   if (t.name === 'dur'){ S.dur = S.service.durations.find(d => d.min === Number(t.value)); renderSlots(); showErr('duration', false); }
-  if (t.name === 'doctor'){ S.doctor = t.value; showErr('doctor', false); }
-  if (t.name === 'date'){ S.date = t.value; $('otherDate').value = ''; renderSlots(); renderDoctors(); }
-  if (t.id === 'otherDate' && t.value){ S.date = t.value; document.querySelectorAll('input[name=date]').forEach(r => r.checked = (r.value === t.value)); renderSlots(); renderDoctors(); }
+  if (t.name === 'doctor'){ S.doctor = t.value; showErr('doctor', false); renderSlots(); }
+  if (t.name === 'date'){ S.date = t.value; $('otherDate').value = ''; renderDoctors(); loadBusy(S.date); }
+  if (t.id === 'otherDate' && t.value){ S.date = t.value; document.querySelectorAll('input[name=date]').forEach(r => r.checked = (r.value === t.value)); renderDoctors(); loadBusy(S.date); }
   if (t.name === 'time'){ S.time = t.value; showErr('time', false); updateBar(); }
 });
 ['customerName', 'customerPhone'].forEach(id => $(id).addEventListener('input', () => { showErr(id, false); $(id).classList.remove('invalid'); }));
@@ -518,6 +550,7 @@ $('confirmBtn').addEventListener('click', async () => {
       $('main').hidden = true; $('bottombar').hidden = true; $('doneView').hidden = false;
       window.scrollTo(0, 0);
     }else if (res.isOverlapping){
+      loadBusy(S.date, true);   // คิวเปลี่ยนระหว่างที่ลูกค้ากรอก: โหลดใหม่
       closeModal('reviewModal');
       $('overlapDoctorName').textContent = res.doctor || S.doctor;
       const list = $('overlapTimeList'); list.innerHTML = '';
@@ -528,6 +561,7 @@ $('confirmBtn').addEventListener('click', async () => {
         $('rvError').innerHTML = `<div><strong>${esc(res.error)}</strong><br>กด "แก้ไขข้อมูล" แล้วเลือกใหม่</div>`;
         $('rvError').hidden = false;
       } else if (res.noDoctorFree){
+        loadBusy(S.date, true);
         $('rvError').innerHTML = `<div><strong>เวลานี้หมอไม่ว่างทุกท่าน</strong><br>กรุณากด "แก้ไขข้อมูล" แล้วเลือกเวลาอื่น</div>`;
         $('rvError').hidden = false;
       } else showBookingError(res.error || 'ไม่ทราบสาเหตุ');
