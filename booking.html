@@ -134,6 +134,7 @@
     <section class="step" aria-labelledby="h-doc">
       <div class="step-head"><span class="step-no">3</span><h2 id="h-doc">เลือกหมอนวด</h2></div>
       <div class="grid2" id="docList" role="radiogroup" aria-labelledby="h-doc"></div>
+      <p class="note" id="docOffNote" hidden></p>
       <p class="err" data-err="doctor" hidden>กรุณาเลือกหมอนวด</p>
     </section>
 
@@ -276,6 +277,8 @@ function useCatalog(c){
   if (Array.isArray(c.services) && c.services.length)
     SERVICES = c.services.map(s => ({ id: s.id, name: s.name, durations: s.durations || [] }));
   if (Array.isArray(c.doctors) && c.doctors.length) DOCTORS = c.doctors;
+  if (c.doctorOffDays) DOCTOR_OFF = c.doctorOffDays;
+  CHECKED_IN = { date: c.today || '', names: c.checkedInToday || [] };
 }
 function applyShopInfo(){
   const h = `ร้านเปิดทุกวัน ${CFG.openTime}–${CFG.closeTime} น.`;
@@ -326,12 +329,28 @@ function renderDurations(){
       <span class="name">${durLabel(d.min)}</span><span class="price">${d.price ? baht(d.price) : 'ราคาตามหน้าร้าน'}</span></label>`).join('');
 }
 const ANY_DOCTOR = 'ให้ร้านจัดให้';
+let DOCTOR_OFF = {};
+let CHECKED_IN = { date: '', names: [] };   // หมอที่เช็กอินวันนี้ (มาทำงานแม้ตรงกับวันหยุด)   // { ชื่อหมอ: [เลขวันหยุด 0=อา..6=ส] } จากคอลัมน์ "วันหยุด" ในชีตหมอ
+const DAY_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+function weekdayOf(iso){ const [y,m,d] = iso.split('-').map(Number); return new Date(y, m - 1, d).getDay(); }
 function renderDoctors(){
+  const wd = S.date ? weekdayOf(S.date) : -1;
+  const workingToday = S.date && S.date === CHECKED_IN.date ? CHECKED_IN.names : [];
+  const off = DOCTORS.filter(d => (DOCTOR_OFF[d] || []).includes(wd) && !workingToday.includes(d));
+  const avail = DOCTORS.filter(d => !off.includes(d));
+  if (S.doctor && S.doctor !== ANY_DOCTOR && off.includes(S.doctor)){
+    $('docOffNote').textContent = `${S.doctor} หยุดวัน${DAY_TH[wd]} กรุณาเลือกหมอใหม่ หรือเลือก "ให้ร้านจัดให้"`;
+    $('docOffNote').hidden = false; S.doctor = null;
+  } else if (off.length){
+    $('docOffNote').textContent = `วัน${DAY_TH[wd]}หยุด: ${off.join(', ')}`;
+    $('docOffNote').hidden = false;
+  } else $('docOffNote').hidden = true;
   $('docList').innerHTML = `
     <label class="choice" style="grid-column:1/-1"><input type="radio" name="doctor" value="${ANY_DOCTOR}">${TICK}
       <span class="body"><span class="name">ไม่ระบุหมอ ให้ร้านจัดให้</span><span class="meta">ร้านเลือกหมอที่ว่างในเวลาที่คุณจอง</span></span></label>`
-    + DOCTORS.map(d => `
-    <label class="choice"><input type="radio" name="doctor" value="${esc(d)}">${TICK}<span class="body"><span class="name">${esc(d)}</span></span></label>`).join('');
+    + avail.map(d => `
+    <label class="choice"><input type="radio" name="doctor" value="${esc(d)}" ${S.doctor === d ? 'checked' : ''}>${TICK}<span class="body"><span class="name">${esc(d)}</span></span></label>`).join('');
+  if (S.doctor === ANY_DOCTOR){ const r = document.querySelector(`input[name=doctor][value="${ANY_DOCTOR}"]`); if (r) r.checked = true; }
 }
 function renderDates(){
   const fmt1 = new Intl.DateTimeFormat('th-TH', { weekday: 'short' });
@@ -379,8 +398,8 @@ form.addEventListener('change', e => {
   if (t.name === 'service'){ S.service = SERVICES[Number(t.value)]; S.dur = S.service.durations.length === 1 ? S.service.durations[0] : null; renderDurations(); renderSlots(); showErr('service', false); }
   if (t.name === 'dur'){ S.dur = S.service.durations.find(d => d.min === Number(t.value)); renderSlots(); showErr('duration', false); }
   if (t.name === 'doctor'){ S.doctor = t.value; showErr('doctor', false); }
-  if (t.name === 'date'){ S.date = t.value; $('otherDate').value = ''; renderSlots(); }
-  if (t.id === 'otherDate' && t.value){ S.date = t.value; document.querySelectorAll('input[name=date]').forEach(r => r.checked = (r.value === t.value)); renderSlots(); }
+  if (t.name === 'date'){ S.date = t.value; $('otherDate').value = ''; renderSlots(); renderDoctors(); }
+  if (t.id === 'otherDate' && t.value){ S.date = t.value; document.querySelectorAll('input[name=date]').forEach(r => r.checked = (r.value === t.value)); renderSlots(); renderDoctors(); }
   if (t.name === 'time'){ S.time = t.value; showErr('time', false); updateBar(); }
 });
 ['customerName', 'customerPhone'].forEach(id => $(id).addEventListener('input', () => { showErr(id, false); $(id).classList.remove('invalid'); }));
@@ -498,7 +517,10 @@ $('confirmBtn').addEventListener('click', async () => {
       (res.bookedSlots || []).forEach(s => { const li = document.createElement('li'); li.textContent = s; list.appendChild(li); });
       openModal('overlapModal');
     }else{
-      if (res.noDoctorFree){
+      if (res.doctorOff){
+        $('rvError').innerHTML = `<div><strong>${esc(res.error)}</strong><br>กด "แก้ไขข้อมูล" แล้วเลือกใหม่</div>`;
+        $('rvError').hidden = false;
+      } else if (res.noDoctorFree){
         $('rvError').innerHTML = `<div><strong>เวลานี้หมอไม่ว่างทุกท่าน</strong><br>กรุณากด "แก้ไขข้อมูล" แล้วเลือกเวลาอื่น</div>`;
         $('rvError').hidden = false;
       } else showBookingError(res.error || 'ไม่ทราบสาเหตุ');
