@@ -79,7 +79,7 @@ const CONFIG = {
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const TYPE_LABEL = { earn:'ได้รับแต้ม', reverse:'หักคืน (ยกเลิก)', redeem:'แลกของรางวัล', adjust:'ปรับแต้ม' };
+const TYPE_LABEL = { earn:'ได้รับแต้ม', reverse:'หักคืน (ยกเลิก)', redeem:'ใช้แต้มแลกของรางวัล', redeem_cancel:'คืนแต้ม', adjust:'ปรับแต้ม' };
 
 $('rule').hidden = true;
 $('bookBtn').addEventListener('click', () => { location.href = CONFIG.BOOKING_URL; });
@@ -110,7 +110,7 @@ function render(data, name){
   $('barWrap').setAttribute('aria-valuemax', goal); $('barWrap').setAttribute('aria-valuenow', Math.min(inCycle, goal));
   requestAnimationFrame(() => { $('bar').style.width = pct + '%'; });
   $('goal').textContent = inCycle >= goal
-    ? `ครบ ${goal.toLocaleString('th-TH')} แต้มแล้ว! แจ้งพนักงานเพื่อแลก ${label}`
+    ? `ครบ ${goal.toLocaleString('th-TH')} แต้มแล้ว! แจ้งพนักงานตอนชำระเงินเพื่อใช้ ${label}`
     : `อีก ${(goal - inCycle).toLocaleString('th-TH')} แต้ม แลก ${label}`;
 
   $('hist').innerHTML = data.history.length ? data.history.map(h => `
