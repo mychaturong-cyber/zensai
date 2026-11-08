@@ -62,28 +62,26 @@
   <button class="btn btn-primary btn-block" id="bookBtn">จองคิวนวด</button>
 
   <footer class="site-footer" aria-label="ข้อมูลร้าน" style="margin-top:var(--sp-2)">
-    <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>เปิดทุกวัน 10:00–22:00 น.</div>
-    <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg><a href="tel:0838974088">083-897-4088</a></div>
-    <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-4.9A8.5 8.5 0 1 1 21 11.5z"/></svg><a href="https://lin.ee/VCzZf3y">แชต LINE ร้าน</a></div>
+    <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span data-shop="hours">เปิดทุกวัน 10:00–22:00 น.</span></div>
+    <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg><a data-shop="phone" href="tel:0838974088">083-897-4088</a></div>
+    <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-4.9A8.5 8.5 0 1 1 21 11.5z"/></svg><a data-shop="line" href="https://lin.ee/VCzZf3y">แชต LINE ร้าน</a></div>
   </footer>
 </main>
 
 <script>
 /* ================== ตั้งค่า ================== */
 const CONFIG = {
-  LIFF_ID: 'YOUR_POINTS_LIFF_ID',   // สร้าง LIFF ใหม่สำหรับหน้านี้ (channel เดียวกับหน้าจอง)
+  LIFF_ID: '2012242488-MQcweAjg',   // LIFF หน้าบัตรสะสมแต้ม
   GAS_URL: 'https://script.google.com/macros/s/AKfycbzGYGDZ9U1p-C6fhe0xOBfk2Kd2uC1qpuZTYIqtyW0Fg2zHU_-hNtagqy3VfTC_7IYmIg/exec',
   BOOKING_URL: 'https://liff.line.me/2012242488-OK0d3lhO/',
-  POINTS_PER_100: 10,
-  REWARD_POINTS: 500,                     // ครบกี่แต้มแลกรางวัล
-  REWARD_LABEL: '[ของรางวัล เช่น นวดไทย 60 นาที ฟรี]',
+  // อัตราแต้ม ของรางวัล เบอร์ และ LINE ร้าน: อ่านจากแท็บ "ตั้งค่า" ที่ส่งมาพร้อมข้อมูลแต้ม
 };
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const TYPE_LABEL = { earn:'ได้รับแต้ม', reverse:'หักคืน (ยกเลิก)', redeem:'แลกของรางวัล', adjust:'ปรับแต้ม' };
 
-$('rule').innerHTML = `ทุก 100 บาท รับ <strong>${CONFIG.POINTS_PER_100} แต้ม</strong> · ครบ ${CONFIG.REWARD_POINTS} แต้ม แลก ${esc(CONFIG.REWARD_LABEL)}<br>แต้มเข้าอัตโนมัติหลังใช้บริการเสร็จ`;
+$('rule').hidden = true;
 $('bookBtn').addEventListener('click', () => { location.href = CONFIG.BOOKING_URL; });
 
 function showError(text){
@@ -96,14 +94,24 @@ function render(data, name){
   $('loading').hidden = true; $('card').hidden = false;
   $('who').textContent = name ? `คุณ${name}` : 'สมาชิกเส้นสาย';
   $('bal').textContent = data.balance.toLocaleString('th-TH');
-  const goal = CONFIG.REWARD_POINTS;
+  const st = data.settings || {};
+  const rate = Number(st.pointsPer100) || 0, goal = Number(st.rewardPoints) || 0, label = st.rewardLabel || '';
+  const hasReward = goal > 0 && label;
+  $('rule').innerHTML = (rate ? `ทุก 100 บาท รับ <strong>${rate} แต้ม</strong>` : '')
+    + (hasReward ? ` · ครบ ${goal.toLocaleString('th-TH')} แต้ม แลก ${esc(label)}` : '')
+    + '<br>แต้มเข้าอัตโนมัติหลังใช้บริการเสร็จ';
+  $('rule').hidden = false;
+  $('barWrap').hidden = !hasReward; $('goal').hidden = !hasReward;
+  document.querySelectorAll('[data-shop="hours"]').forEach(el => { if (st.openTime) el.textContent = `เปิดทุกวัน ${st.openTime}–${st.closeTime} น.`; });
+  document.querySelectorAll('[data-shop="phone"]').forEach(el => { if (st.phone){ el.textContent = st.phone; el.href = 'tel:' + String(st.phone).replace(/\D/g, ''); } });
+  document.querySelectorAll('[data-shop="line"]').forEach(el => { if (st.lineUrl) el.href = st.lineUrl; });
   const inCycle = Math.max(0, data.balance);
-  const pct = Math.min(100, inCycle / goal * 100);
+  const pct = hasReward ? Math.min(100, inCycle / goal * 100) : 0;
   $('barWrap').setAttribute('aria-valuemax', goal); $('barWrap').setAttribute('aria-valuenow', Math.min(inCycle, goal));
   requestAnimationFrame(() => { $('bar').style.width = pct + '%'; });
   $('goal').textContent = inCycle >= goal
-    ? `ครบ ${goal} แต้มแล้ว! แจ้งพนักงานเพื่อแลก ${CONFIG.REWARD_LABEL}`
-    : `อีก ${(goal - inCycle).toLocaleString('th-TH')} แต้ม แลก ${CONFIG.REWARD_LABEL}`;
+    ? `ครบ ${goal.toLocaleString('th-TH')} แต้มแล้ว! แจ้งพนักงานเพื่อแลก ${label}`
+    : `อีก ${(goal - inCycle).toLocaleString('th-TH')} แต้ม แลก ${label}`;
 
   $('hist').innerHTML = data.history.length ? data.history.map(h => `
     <li><div class="t"><span>${esc(h.note || TYPE_LABEL[h.type] || h.type)}</span>
