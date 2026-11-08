@@ -140,7 +140,7 @@
     <!-- 4 วันและเวลา -->
     <section class="step" aria-labelledby="h-time">
       <div class="step-head"><span class="step-no">4</span><h2 id="h-time">เลือกวันและเวลา</h2></div>
-      <p class="step-hint">ร้านเปิดทุกวัน 10:00–22:00 น.</p>
+      <p class="step-hint" id="hoursHint">ร้านเปิดทุกวัน 10:00–22:00 น.</p>
       <div class="grid4 grid-dates" id="dateList" role="radiogroup" aria-label="วันที่"></div>
       <div class="field other-date">
         <label for="otherDate" style="font-weight:500;font-size:var(--fs-sm);color:var(--c-text-2)">หรือเลือกวันอื่น</label>
@@ -177,9 +177,9 @@
   </form>
 
   <footer class="site-footer" aria-label="ข้อมูลร้าน">
-    <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>เปิดทุกวัน 10:00–22:00 น.</div>
-    <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg><a href="tel:0838974088">083-897-4088</a></div>
-    <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-4.9A8.5 8.5 0 1 1 21 11.5z"/></svg><a href="https://lin.ee/VCzZf3y">แชต LINE ร้าน</a></div>
+    <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span data-shop="hours">เปิดทุกวัน 10:00–22:00 น.</span></div>
+    <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg><a data-shop="phone" href="tel:0838974088">083-897-4088</a></div>
+    <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-4.9A8.5 8.5 0 1 1 21 11.5z"/></svg><a data-shop="line" href="https://lin.ee/VCzZf3y">แชต LINE ร้าน</a></div>
   </footer>
 </main>
 
@@ -191,10 +191,10 @@
     <p class="page-sub">เลขอ้างอิงการจอง</p>
     <div class="ref" id="doneRef">BK-000000</div>
     <div class="summary" id="doneSummary"></div>
-    <p class="note" style="margin-bottom:var(--sp-4)"><span id="doneLineNote">ร้านส่งใบนัดเข้าแชต LINE แล้ว</span> หากต้องการเลื่อนหรือยกเลิก กรุณาแจ้งร้านทาง LINE หรือโทร <a href="tel:0838974088" style="white-space:nowrap">083-897-4088</a></p>
+    <p class="note" style="margin-bottom:var(--sp-4)"><span id="doneLineNote">ร้านส่งใบนัดเข้าแชต LINE แล้ว</span> หากต้องการเลื่อนหรือยกเลิก กรุณาแจ้งร้านทาง LINE หรือโทร <a data-shop="phone" href="tel:0838974088" style="white-space:nowrap">083-897-4088</a></p>
     <div class="stack">
       <button class="btn btn-primary btn-block" id="doneClose">เสร็จสิ้น</button>
-      <a class="btn btn-secondary btn-block" href="https://lin.ee/VCzZf3y">ติดต่อร้านทาง LINE</a>
+      <a class="btn btn-secondary btn-block" data-shop="line" href="https://lin.ee/VCzZf3y">ติดต่อร้านทาง LINE</a>
     </div>
   </div>
 </section>
@@ -239,9 +239,9 @@
 let userLineId = "";
 const LIFF_ID = "2012242488-OK0d3lhO";
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzGYGDZ9U1p-C6fhe0xOBfk2Kd2uC1qpuZTYIqtyW0Fg2zHU_-hNtagqy3VfTC_7IYmIg/exec";
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT_Zn71o_I7FgMjcHRCRzixSEFGeyavFXZJ57lqwxLIShnKe5nII9MDj4HGU1UefXMEYSWHhbrmtxed/pubhtml?gid=1917944634&single=true";
 let DOCTORS = ["พี่สุ", "พี่นุ่น"];   // สำรอง: ใช้เมื่อโหลดรายชื่อจากชีต "ชื่อพนักงาน/หมอ" ไม่ได้
-const OPEN = "10:00", CLOSE = "22:00", SLOT_STEP = 30;   // เวลาทำการ / ช่วงห่างของช่องเวลา (นาที)
+// เวลาเปิด-ปิด ช่วงห่างช่องเวลา เบอร์ และ LINE ร้าน: อ่านจากแท็บ "ตั้งค่า" (ค่านี้ใช้เมื่อโหลดไม่ได้)
+let CFG = { openTime: "10:00", closeTime: "22:00", slotStep: 30, phone: "083-897-4088", lineUrl: "https://lin.ee/VCzZf3y" };   // เวลาทำการ / ช่วงห่างของช่องเวลา (นาที)
 const START_URL = location.href;
 
 // รายการสำรอง (ใช้เมื่อโหลด Sheet ไม่ได้) = รายการเดิมของหน้าจอง ไม่มีราคา
@@ -269,62 +269,39 @@ function setStatus(type, text){
   el.querySelector('span:last-child').textContent = text;
 }
 
-/* ================== โหลดบริการจาก Sheet ================== */
-function toCsvUrl(url){
-  const pub = url.match(/\/spreadsheets\/d\/e\/([\w-]+)\//);
-  if (pub){ const gid = (url.match(/[?&#]gid=(\d+)/) || [])[1]; return `https://docs.google.com/spreadsheets/d/e/${pub[1]}/pub?output=csv${gid ? `&gid=${gid}` : ''}`; }
-  const doc = url.match(/\/spreadsheets\/d\/([\w-]+)/);
-  if (doc){ const gid = (url.match(/[?&#]gid=(\d+)/) || [])[1] || '0'; return `https://docs.google.com/spreadsheets/d/${doc[1]}/gviz/tq?tqx=out:csv&gid=${gid}`; }
-  return url;
+/* ================== โหลดบริการ (ชีต Price) + หมอ + ตั้งค่า ผ่าน Apps Script ================== */
+const CACHE_KEY = 'zensai_catalog_v1';
+function useCatalog(c){
+  CFG = Object.assign(CFG, c.settings || {});
+  if (Array.isArray(c.services) && c.services.length)
+    SERVICES = c.services.map(s => ({ id: s.id, name: s.name, durations: s.durations || [] }));
+  if (Array.isArray(c.doctors) && c.doctors.length) DOCTORS = c.doctors;
 }
-function parseCSV(text){
-  const rows = []; let row = [], f = '', q = false;
-  for (let i = 0; i < text.length; i++){
-    const c = text[i];
-    if (q){ if (c === '"'){ if (text[i + 1] === '"'){ f += '"'; i++; } else q = false; } else f += c; }
-    else if (c === '"') q = true;
-    else if (c === ','){ row.push(f); f = ''; }
-    else if (c === '\n' || c === '\r'){ if (c === '\r' && text[i + 1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
-    else f += c;
-  }
-  if (f || row.length){ row.push(f); rows.push(row); }
-  const head = (rows.shift() || []).map(h => h.trim().toLowerCase());
-  return rows.filter(r => r.some(v => v.trim())).map(r => Object.fromEntries(head.map((h, i) => [h, (r[i] ?? '').trim()])));
+function applyShopInfo(){
+  const h = `ร้านเปิดทุกวัน ${CFG.openTime}–${CFG.closeTime} น.`;
+  document.querySelectorAll('[data-shop="hours"]').forEach(el => el.textContent = h.replace('ร้าน', ''));
+  $('hoursHint').textContent = h;
+  document.querySelectorAll('[data-shop="phone"]').forEach(el => { el.textContent = CFG.phone; el.href = 'tel:' + String(CFG.phone).replace(/\D/g, ''); });
+  document.querySelectorAll('[data-shop="line"]').forEach(el => el.href = CFG.lineUrl);
 }
-async function loadServices(){
-  try{
-    const url = toCsvUrl(SHEET_URL);
-    const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const text = (await res.text()).replace(/^﻿/, '');
-    if (/^\s*</.test(text)) throw new Error('Sheet ไม่ได้ส่ง CSV');
-    const map = new Map();
-    for (const r of parseCSV(text)){
-      if (!r.name || String(r.active).toUpperCase() === 'FALSE') continue;
-      const id = r.service_id || r.name;
-      if (!map.has(id)) map.set(id, { id, name: r.name, sort: Number(r.sort) || 999, durations: [] });
-      const s = map.get(id), min = Number(r.duration_min), price = Number(String(r.price).replace(/[^\d.]/g, '')) || 0;
-      if (min && !s.durations.some(d => d.min === min)) s.durations.push({ min, price });
-    }
-    SERVICES = [...map.values()].map(s => (s.durations.sort((a, b) => a.min - b.min), s)).sort((a, b) => a.sort - b.sort);
-    if (!SERVICES.length) throw new Error('ไม่พบบริการ');
-  }catch(e){
-    console.warn('ใช้รายการบริการสำรอง:', e);
-    SERVICES = FALLBACK_SERVICES.map(n => ({ id: '', name: n, durations: FALLBACK_DURATIONS.map(min => ({ min, price: 0 })) }));
-  }
-  renderServices();
-}
-
-/* ================== โหลดรายชื่อหมอจากชีต ================== */
-async function loadDoctors(){
+async function loadCatalog(){
   $('docList').innerHTML = '<div class="skeleton" style="height:56px"></div><div class="skeleton" style="height:56px"></div>';
   try{
-    const r = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'doctors' }) });
-    const res = await r.json();
-    if (res.success && Array.isArray(res.doctors) && res.doctors.length) DOCTORS = res.doctors;
-    else throw new Error(res.error || 'ไม่มีรายชื่อ');
-  }catch(e){ console.warn('ใช้รายชื่อหมอสำรอง:', e); }
-  renderDoctors();
+    const r = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'catalog' }) });
+    const c = await r.json();
+    if (!c.success) throw new Error(c.error || 'โหลดไม่สำเร็จ');
+    useCatalog(c);
+    try{ localStorage.setItem(CACHE_KEY, JSON.stringify(c)); }catch(e){}
+  }catch(e){
+    console.warn('โหลดข้อมูลล่าสุดไม่ได้:', e);
+    let cached = null;
+    try{ cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); }catch(_){}
+    if (cached) useCatalog(cached);   // ใช้ข้อมูลครั้งล่าสุดที่เคยโหลดได้
+  }
+  if (!SERVICES.length)               // ไม่มีทั้งข้อมูลสด/ที่จำไว้: ใช้รายการเดิมของร้าน (ไม่มีราคา) ให้ลูกค้ายังจองได้
+    SERVICES = FALLBACK_SERVICES.map(n => ({ id: '', name: n, durations: FALLBACK_DURATIONS.map(min => ({ min, price: 0 })) }));
+  applyShopInfo();
+  renderServices(); renderDoctors(); renderSlots();
 }
 
 /* ================== render ================== */
@@ -369,9 +346,9 @@ function renderSlots(){
   const dur = S.dur ? S.dur.min : 60;
   const now = new Date(), isToday = S.date === isoDate(now);
   const nowMin = now.getHours() * 60 + now.getMinutes();
-  const last = toMin(CLOSE) - dur;
+  const last = toMin(CFG.closeTime) - dur, step = Number(CFG.slotStep) || 30;
   let html = '', free = 0;
-  for (let m = toMin(OPEN); m <= toMin(CLOSE) - SLOT_STEP; m += SLOT_STEP){
+  for (let m = toMin(CFG.openTime); m <= toMin(CFG.closeTime) - step; m += step){
     const t = fromMin(m);
     const off = (isToday && m <= nowMin) || m > last;
     if (!off) free++;
@@ -503,7 +480,10 @@ $('confirmBtn').addEventListener('click', async () => {
       closeModal('reviewModal');
       $('doneRef').textContent = res.bookingId;
       $('doneSummary').innerHTML = summaryHTML();
-      $('doneLineNote').textContent = userLineId ? 'ร้านส่งใบนัดเข้าแชต LINE แล้ว' : 'กรุณาบันทึกเลขอ้างอิงนี้ไว้';
+      $('doneLineNote').textContent =
+        res.lineSent === true ? 'ร้านส่งใบนัดเข้าแชต LINE แล้ว'
+        : res.lineSent === false ? (userLineId ? 'ส่งใบนัดเข้า LINE ไม่สำเร็จ กรุณาบันทึกเลขอ้างอิงนี้ไว้ (การจองบันทึกเรียบร้อยแล้ว)' : 'กรุณาบันทึกเลขอ้างอิงนี้ไว้')
+        : (userLineId ? 'ร้านส่งใบนัดเข้าแชต LINE แล้ว' : 'กรุณาบันทึกเลขอ้างอิงนี้ไว้');   // ระบบหลังบ้านเวอร์ชันเก่า
       $('main').hidden = true; $('bottombar').hidden = true; $('doneView').hidden = false;
       window.scrollTo(0, 0);
     }else if (res.isOverlapping){
@@ -526,7 +506,7 @@ function showBookingError(msg, network){
   const el = $('rvError');
   el.innerHTML = `<div><strong>จองไม่สำเร็จ:</strong> ${esc(msg)}<br>${network
     ? 'ตรวจสอบสัญญาณอินเทอร์เน็ตแล้วกด "ยืนยันการจอง" อีกครั้ง'
-    : 'ลองแก้ไขข้อมูลแล้วกดยืนยันอีกครั้ง'} หากยังไม่ได้ ติดต่อร้าน 083-897-4088</div>`;
+    : 'ลองแก้ไขข้อมูลแล้วกดยืนยันอีกครั้ง'} หากยังไม่ได้ ติดต่อร้าน ${esc(CFG.phone)}</div>`;
   el.hidden = false;
 }
 
@@ -594,12 +574,12 @@ async function initApp(){
 
 // วันนี้เลยเวลาจองแล้ว -> เริ่มที่พรุ่งนี้
 (function(){
-  const n = new Date(), lastStart = toMin(CLOSE) - 60;
+  const n = new Date(), lastStart = toMin(CFG.closeTime) - 60;
   const d = (n.getHours() * 60 + n.getMinutes() >= lastStart) ? new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1) : n;
   S.date = isoDate(d);
 })();
 renderDates(); renderDurations(); renderSlots();
-Promise.allSettled([initApp(), loadServices(), loadDoctors()]).then(prefillFromMenu);
+Promise.allSettled([initApp(), loadCatalog()]).then(prefillFromMenu);
 </script>
 </body>
 </html>
