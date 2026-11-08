@@ -279,6 +279,7 @@ function useCatalog(c){
   if (Array.isArray(c.doctors) && c.doctors.length) DOCTORS = c.doctors;
   if (c.doctorOffDays) DOCTOR_OFF = c.doctorOffDays;
   CHECKED_IN = { date: c.today || '', names: c.checkedInToday || [] };
+  LEAVE = c.leave || {};
 }
 function applyShopInfo(){
   const h = `ร้านเปิดทุกวัน ${CFG.openTime}–${CFG.closeTime} น.`;
@@ -330,19 +331,21 @@ function renderDurations(){
 }
 const ANY_DOCTOR = 'ให้ร้านจัดให้';
 let DOCTOR_OFF = {};
-let CHECKED_IN = { date: '', names: [] };   // หมอที่เช็กอินวันนี้ (มาทำงานแม้ตรงกับวันหยุด)   // { ชื่อหมอ: [เลขวันหยุด 0=อา..6=ส] } จากคอลัมน์ "วันหยุด" ในชีตหมอ
+let CHECKED_IN = { date: '', names: [] };
+let LEAVE = {};   // { "yyyy-mm-dd": [ชื่อหมอที่ลา] } จากแท็บ วันลา   // หมอที่เช็กอินวันนี้ (มาทำงานแม้ตรงกับวันหยุด)   // { ชื่อหมอ: [เลขวันหยุด 0=อา..6=ส] } จากคอลัมน์ "วันหยุด" ในชีตหมอ
 const DAY_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 function weekdayOf(iso){ const [y,m,d] = iso.split('-').map(Number); return new Date(y, m - 1, d).getDay(); }
 function renderDoctors(){
   const wd = S.date ? weekdayOf(S.date) : -1;
   const workingToday = S.date && S.date === CHECKED_IN.date ? CHECKED_IN.names : [];
-  const off = DOCTORS.filter(d => (DOCTOR_OFF[d] || []).includes(wd) && !workingToday.includes(d));
+  const onLeave = (S.date && LEAVE[S.date]) || [];
+  const off = DOCTORS.filter(d => ((DOCTOR_OFF[d] || []).includes(wd) || onLeave.includes(d)) && !workingToday.includes(d));
   const avail = DOCTORS.filter(d => !off.includes(d));
   if (S.doctor && S.doctor !== ANY_DOCTOR && off.includes(S.doctor)){
-    $('docOffNote').textContent = `${S.doctor} หยุดวัน${DAY_TH[wd]} กรุณาเลือกหมอใหม่ หรือเลือก "ให้ร้านจัดให้"`;
+    $('docOffNote').textContent = `${S.doctor} ${onLeave.includes(S.doctor) ? 'ลาวันที่เลือก' : 'หยุดวัน' + DAY_TH[wd]} กรุณาเลือกหมอใหม่ หรือเลือก "ให้ร้านจัดให้"`;
     $('docOffNote').hidden = false; S.doctor = null;
   } else if (off.length){
-    $('docOffNote').textContent = `วัน${DAY_TH[wd]}หยุด: ${off.join(', ')}`;
+    $('docOffNote').textContent = `วันที่เลือกไม่มาทำงาน: ${off.join(', ')}`;
     $('docOffNote').hidden = false;
   } else $('docOffNote').hidden = true;
   $('docList').innerHTML = `
