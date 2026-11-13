@@ -103,9 +103,9 @@
   <div class="skeleton" style="height:120px"></div><div class="skeleton" style="height:120px"></div><div class="skeleton" style="height:120px"></div>
 </main>
 <footer class="site-footer container" aria-label="ข้อมูลร้าน" style="margin-top:0">
-  <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>เปิดทุกวัน 10:00–22:00 น.</div>
-  <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg><a href="tel:0838974088">083-897-4088</a></div>
-  <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-4.9A8.5 8.5 0 1 1 21 11.5z"/></svg><a href="https://lin.ee/VCzZf3y">แชต LINE ร้าน</a></div>
+  <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span data-shop="hours">เปิดทุกวัน 10:00–22:00 น.</span></div>
+  <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg><a data-shop="phone" href="tel:0838974088">083-897-4088</a></div>
+  <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-4.9A8.5 8.5 0 1 1 21 11.5z"/></svg><a data-shop="line" href="https://lin.ee/VCzZf3y">แชต LINE ร้าน</a></div>
 </footer>
 
 <div class="overlay" id="overlay"></div>
@@ -139,25 +139,12 @@
 <script>
 /* ================== ตั้งค่า ================== */
 const CONFIG = {
-  LIFF_ID: 'YOUR_LIFF_ID',      // จาก LINE Developers > LIFF
-  SHEET_CSV_URL: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT_Zn71o_I7FgMjcHRCRzixSEFGeyavFXZJ57lqwxLIShnKe5nII9MDj4HGU1UefXMEYSWHhbrmtxed/pubhtml?gid=1917944634&single=true',  // ลิงก์ Google Sheet (pubhtml / edit / csv ใช้ได้หมด)
+  LIFF_ID: '2012242488-9FyrgqQd',      // จาก LINE Developers > LIFF
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzGYGDZ9U1p-C6fhe0xOBfk2Kd2uC1qpuZTYIqtyW0Fg2zHU_-hNtagqy3VfTC_7IYmIg/exec',
   BOOKING_URL: 'https://liff.line.me/2012242488-OK0d3lhO/',  // หน้าจองคิว (ว่าง = ส่งข้อความจองเข้าแชตแทน)
-  POINTS_PER_100_BAHT: 10,      // อัตราแต้ม: ทุก 100 บาท ได้กี่แต้ม
 };
-
-/* ข้อมูลตัวอย่าง: 1 แถว = 1 บริการ x 1 ระยะเวลา (ราคาเป็นตัวอย่าง แก้ใน Sheet) */
-const SAMPLE_CSV = `service_id,category,name,description,duration_min,price,image_url,badge,options_title,options,active,sort
-combo1,แพ็กเกจ,คอมโบ เท้า 30 + ไทย 60,คลายเท้าก่อน แล้วต่อด้วยนวดไทยทั้งตัว,90,0,,โปร,,,TRUE,1
-thai,นวดไทย,นวดแผนไทย,คลายกล้ามเนื้อทั้งตัว ยืดเส้น กดจุด,60,0,,ขายดี,,,TRUE,2
-thai,นวดไทย,นวดแผนไทย,,90,0,,,,,TRUE,2
-thai,นวดไทย,นวดแผนไทย,,120,0,,,,,TRUE,2
-oil,น้ำมัน/อโรมา,นวดน้ำมันอโรมา,นวดด้วยน้ำมันหอมระเหย ผ่อนคลาย หลับสบาย,60,0,,,กลิ่นน้ำมัน,ลาเวนเดอร์|ตะไคร้|มะลิ|ไม่มีกลิ่น,TRUE,3
-oil,น้ำมัน/อโรมา,นวดน้ำมันอโรมา,,90,0,,,,,TRUE,3
-foot,นวดเท้า,นวดเท้า,กดจุดฝ่าเท้า ลดอาการเมื่อยล้า,30,0,,,,,TRUE,4
-foot,นวดเท้า,นวดเท้า,,60,0,,,,,TRUE,4
-office,คอ บ่า ไหล่,นวดคอ บ่า ไหล่ (ออฟฟิศซินโดรม),เน้นจุดตึงจากการนั่งทำงานนาน,30,0,,,,,TRUE,5
-office,คอ บ่า ไหล่,นวดคอ บ่า ไหล่ (ออฟฟิศซินโดรม),,60,0,,,,,TRUE,5
-stone,ประคบ/หินร้อน,ประคบสมุนไพร / Hot Stone,ความร้อนช่วยคลายจุดตึงลึก,90,0,,,,,TRUE,6`;
+// ราคา/บริการ: ชีต Price · อัตราแต้ม เบอร์ LINE เวลาเปิด: แท็บ ตั้งค่า (อ่านผ่าน Apps Script)
+let SETTINGS = { pointsPer100: 0, phone: '083-897-4088', lineUrl: 'https://lin.ee/VCzZf3y', openTime: '10:00', closeTime: '22:00' };
 
 /* ================== state ================== */
 let SERVICES = [];   // [{id,category,name,desc,image,badge,optTitle,options[],sort,durations:[{min,price}]}]
@@ -166,76 +153,51 @@ let current = null, chosenDur = null, chosenOpt = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const baht = n => n > 0 ? '฿' + Number(n).toLocaleString('th-TH') : 'สอบถามราคา';
-const points = price => Math.floor(price / 100) * CONFIG.POINTS_PER_100_BAHT;
-const LOTUS = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#8A6A2E" stroke-width="1.5" aria-hidden="true"><path d="M12 20c-4 0-8-3-9-7 3 0 6 1 9 4 3-3 6-4 9-4-1 4-5 7-9 7z"/><path d="M12 17c-2-2-3-5-3-8 1.5 1 2.5 2 3 3 .5-1 1.5-2 3-3 0 3-1 6-3 8z"/></svg>';
+const points = price => Math.floor((price || 0) / 100) * (Number(SETTINGS.pointsPer100) || 0);
+const CACHE_KEY = 'zensai_catalog_v1';
 
-/* ================== CSV ================== */
-function parseCSV(text){
-  const rows=[]; let row=[], f='', q=false;
-  for(let i=0;i<text.length;i++){
-    const c=text[i];
-    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; }
-    else if(c==='"') q=true;
-    else if(c===','){ row.push(f); f=''; }
-    else if(c==='\n'||c==='\r'){ if(c==='\r'&&text[i+1]==='\n') i++; row.push(f); rows.push(row); row=[]; f=''; }
-    else f+=c;
-  }
-  if(f||row.length){ row.push(f); rows.push(row); }
-  const head = rows.shift().map(h=>h.trim().toLowerCase());
-  return rows.filter(r=>r.some(v=>v.trim())).map(r=>Object.fromEntries(head.map((h,i)=>[h,(r[i]??'').trim()])));
+/* ================== โหลดเมนูจาก Apps Script (ชีต Price + ตั้งค่า) ================== */
+function applyCatalog(c){
+  SETTINGS = Object.assign(SETTINGS, c.settings || {});
+  SERVICES = (c.services || []).map(s => ({
+    id: s.id, category: s.category, name: s.name, desc: s.description, image: s.image, badge: s.badge,
+    optTitle: s.optionsTitle, options: s.options || [], sort: s.sort, durations: s.durations || []
+  }));
+  applyShopInfo();
 }
-
-function buildServices(rows){
-  const map = new Map();
-  for(const r of rows){
-    if(String(r.active).toUpperCase()==='FALSE' || !r.name) continue;
-    const id = r.service_id || r.name;
-    if(!map.has(id)) map.set(id,{id,category:'',name:'',desc:'',image:'',badge:'',optTitle:'',options:[],sort:999,durations:[]});
-    const s = map.get(id);
-    s.category ||= r.category; s.name ||= r.name; s.desc ||= r.description;
-    s.image ||= r.image_url; s.badge ||= r.badge; s.optTitle ||= r.options_title;
-    if(!s.options.length && r.options) s.options = r.options.split('|').map(x=>x.trim()).filter(Boolean);
-    if(r.sort) s.sort = Math.min(s.sort, Number(r.sort)||999);
-    const min = Number(r.duration_min), price = Number(String(r.price).replace(/[^\d.]/g,''))||0;
-    if(min) s.durations.push({min, price});
-  }
-  return [...map.values()].map(s=>(s.durations.sort((a,b)=>a.min-b.min), s)).sort((a,b)=>a.sort-b.sort);
+function applyShopInfo(){
+  document.querySelectorAll('[data-shop="hours"]').forEach(el => el.textContent = `เปิดทุกวัน ${SETTINGS.openTime}–${SETTINGS.closeTime} น.`);
+  document.querySelectorAll('[data-shop="phone"]').forEach(el => { el.textContent = SETTINGS.phone; el.href = 'tel:' + String(SETTINGS.phone).replace(/\D/g, ''); });
+  document.querySelectorAll('[data-shop="line"]').forEach(el => el.href = SETTINGS.lineUrl);
 }
-
-/* รับได้ทั้งลิงก์แชร์ (/edit), ลิงก์ publish (pubhtml) และลิงก์ CSV ตรง */
-function toCsvUrl(url){
-  const pub = url.match(/\/spreadsheets\/d\/e\/([\w-]+)\//);
-  if(pub){
-    const gid = (url.match(/[?&#]gid=(\d+)/)||[])[1];
-    return `https://docs.google.com/spreadsheets/d/e/${pub[1]}/pub?output=csv${gid?`&gid=${gid}`:''}`;
-  }
-  const doc = url.match(/\/spreadsheets\/d\/([\w-]+)/);
-  if(doc){
-    const gid = (url.match(/[?&#]gid=(\d+)/)||[])[1] || '0';
-    return `https://docs.google.com/spreadsheets/d/${doc[1]}/gviz/tq?tqx=out:csv&gid=${gid}`;
-  }
-  return url;
+async function fetchCatalog(){
+  const r = await fetch(CONFIG.GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'catalog' }) });
+  const c = await r.json();
+  if (!c.success) throw new Error(c.error || 'โหลดเมนูไม่สำเร็จ');
+  return c;
 }
-
+// เปิดเร็ว: แสดงเมนูที่จำไว้ก่อน แล้วอัปเดตจากชีตทันทีที่โหลดเสร็จ
 async function loadData(){
-  let rows = parseCSV(SAMPLE_CSV);
-  if(CONFIG.SHEET_CSV_URL){
-    try{
-      const url = toCsvUrl(CONFIG.SHEET_CSV_URL);
-      const res = await fetch(url + (url.includes('?')?'&':'?') + 't=' + Date.now());
-      if(!res.ok) throw new Error('HTTP ' + res.status);
-      const text = (await res.text()).replace(/^﻿/, '');
-      if(/^\s*</.test(text)) throw new Error('ได้หน้าเว็บกลับมา ไม่ใช่ CSV (เช็กว่าแชร์ Sheet แบบ "ทุกคนที่มีลิงก์" แล้ว)');
-      const sheetRows = parseCSV(text);
-      if(!sheetRows.some(r => r.name && r.duration_min))
-        throw new Error('ไม่พบคอลัมน์ name / duration_min ในแถวแรกของ Sheet');
-      rows = sheetRows;
-    }catch(e){
-      console.warn('Sheet load failed:', e);
-      toast('โหลดเมนูจาก Sheet ไม่สำเร็จ: ' + e.message);
-    }
+  let cached = null;
+  try{ cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); }catch(e){}
+  if (cached){ applyCatalog(cached); }
+  const fresh = fetchCatalog().then(c => {
+    applyCatalog(c);
+    try{ localStorage.setItem(CACHE_KEY, JSON.stringify(c)); }catch(e){}
+    return true;
+  });
+  if (cached){
+    fresh.then(() => { renderTabs(); renderList(); }).catch(e => console.warn('ใช้เมนูที่จำไว้:', e));
+    return;
   }
-  SERVICES = buildServices(rows);
+  try{ await fresh; }
+  catch(e){
+    console.warn(e);
+    $('list').innerHTML = `<div class="alert alert-error" role="alert"><div><strong>โหลดเมนูไม่สำเร็จ</strong><br>
+      ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่ หรือสอบถามร้าน <a data-shop="phone" href="tel:0838974088">083-897-4088</a></div></div>
+      <button class="btn btn-primary btn-block" onclick="location.reload()">ลองใหม่</button>`;
+    throw e;
+  }
 }
 
 /* ================== render ================== */
@@ -360,7 +322,7 @@ async function initLiff(){
 }
 
 (async function start(){
-  await Promise.all([initLiff(), loadData()]);
+  try{ await Promise.all([initLiff(), loadData()]); }catch(e){ return; }
   const qs = new URLSearchParams(location.search);
   if(qs.get('cat')) currentCat = qs.get('cat');      // เปิดตรงหมวด: ?cat=นวดเท้า
   renderTabs(); renderList();
