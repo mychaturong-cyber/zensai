@@ -29,6 +29,11 @@
   li .t small{color:var(--c-text-2);font-size:var(--fs-xs)}
   li .p{font-weight:700;white-space:nowrap}
   li .p.plus{color:var(--c-success)} li .p.minus{color:var(--c-danger)}
+  .link{padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-3)}
+  .link h2{font-size:var(--fs-md)}
+  .link p{font-size:var(--fs-sm);color:var(--c-text-2);margin:0}
+  .link .row2{display:flex;gap:var(--sp-2)} .link .row2 .input{flex:1}
+  .link .linked{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2);font-size:var(--fs-sm)}
   .empty{justify-content:center;color:var(--c-text-2);font-size:var(--fs-sm);padding:var(--sp-6) var(--sp-4)}
 </style>
 </head>
@@ -55,6 +60,25 @@
   <div class="alert alert-error" id="msg" role="alert" hidden></div>
 
   <div class="rule" id="rule"></div>
+
+  <section class="card link" id="linkBox" hidden aria-labelledby="linkTitle">
+    <h2 id="linkTitle">สะสมแต้มตอนมาที่ร้าน</h2>
+    <div id="linkForm">
+      <p>ใส่เบอร์โทรครั้งเดียว แล้วแจ้งเบอร์นี้กับพนักงานทุกครั้งที่ใช้บริการ แต้มจะเข้าบัตรนี้ให้อัตโนมัติ (นับตั้งแต่วันที่ผูกเบอร์)</p>
+      <div class="field" style="margin-top:var(--sp-3)">
+        <label for="phone">เบอร์โทรศัพท์</label>
+        <div class="row2">
+          <input class="input" id="phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="08x-xxx-xxxx" maxlength="12">
+          <button class="btn btn-primary" id="linkBtn" type="button">บันทึก</button>
+        </div>
+      </div>
+      <div class="err" id="linkErr" role="alert" hidden></div>
+    </div>
+    <div class="linked" id="linkedRow" hidden>
+      <span>ผูกเบอร์แล้ว: <strong id="linkedPhone"></strong></span>
+      <button class="btn btn-ghost" id="changeBtn" type="button">เปลี่ยนเบอร์</button>
+    </div>
+  </section>
 
   <h2>ประวัติแต้ม</h2>
   <ul class="card" id="hist"><li class="empty">กำลังโหลด...</li></ul>
@@ -89,6 +113,28 @@ function showError(text){
   $('msg').textContent = text; $('msg').hidden = false;
   $('hist').innerHTML = '<li class="empty">—</li>';
 }
+
+function showLinked(masked){
+  $('linkBox').hidden = false;
+  $('linkForm').hidden = !!masked; $('linkedRow').hidden = !masked;
+  $('linkedPhone').textContent = masked || '';
+}
+
+$('changeBtn').addEventListener('click', () => { $('linkForm').hidden = false; $('linkedRow').hidden = true; $('phone').focus(); });
+$('linkBtn').addEventListener('click', async () => {
+  const phone = $('phone').value.replace(/\D/g, '');
+  $('linkErr').hidden = true;
+  if (!/^0\d{8,9}$/.test(phone)) { $('linkErr').textContent = 'กรุณาใส่เบอร์โทร 10 หลัก เช่น 0812345678'; $('linkErr').hidden = false; return; }
+  const btn = $('linkBtn'); btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+  try{
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'linkPhone', accessToken: liff.getAccessToken(), phone }) }).then(r => r.json());
+    if (!res.success) throw new Error(res.error || 'บันทึกไม่สำเร็จ');
+    showLinked(res.linkedPhone); $('phone').value = '';
+  }catch(e){
+    $('linkErr').textContent = e.message || String(e); $('linkErr').hidden = false;
+  }finally{ btn.disabled = false; btn.textContent = 'บันทึก'; }
+});
 
 function render(data, name){
   $('loading').hidden = true; $('card').hidden = false;
@@ -134,6 +180,7 @@ function render(data, name){
     ]);
     if (!res.success) throw new Error(res.error || 'โหลดแต้มไม่สำเร็จ');
     render(res, profile && profile.displayName);
+    showLinked(res.linkedPhone || '');
   }catch(e){
     console.error(e);
     showError('โหลดข้อมูลแต้มไม่สำเร็จ (' + (e.message || e) + ') กรุณาปิดแล้วเปิดใหม่จากเมนูในแชต LINE ของร้าน หากยังไม่ได้ ติดต่อ 083-897-4088');
