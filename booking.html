@@ -30,6 +30,13 @@
   .choice .name{font-weight:600}
   .choice .meta{font-size:var(--fs-sm);color:var(--c-text-2)}
   .choice .price{font-weight:700;color:var(--c-primary);white-space:nowrap}
+  /* โปรโมชั่น */
+  .promo-bn{display:flex;gap:var(--sp-3);align-items:flex-start;background:var(--c-primary);color:#fff;border-radius:var(--r-lg);padding:var(--sp-3) var(--sp-4);margin-bottom:var(--sp-4)}
+  .promo-bn .tag{flex:none;font-size:var(--fs-xs);border:1px solid var(--c-gold);border-radius:var(--r-pill);padding:0 10px;margin-top:2px}
+  .promo-bn strong{display:block}
+  .promo-bn small{display:block;opacity:.85;font-size:var(--fs-sm)}
+  .promo-bn.off{background:var(--c-muted-bg);color:var(--c-text)}
+  .total s{color:var(--c-text-2);font-weight:400;margin-right:6px}
   .choice.compact{flex-direction:column;align-items:flex-start;gap:2px;min-height:64px}
   .choice.compact .tick{position:absolute;top:10px;right:10px;width:20px;height:20px}
 
@@ -111,6 +118,8 @@
   <h1 class="page-title">จองคิวนวด</h1>
   <p class="page-sub">เลือกบริการ หมอ และเวลาที่สะดวก ใช้เวลาไม่ถึง 1 นาที</p>
   <div id="lineStatus" class="status-line" role="status"><span class="dot"></span><span>กำลังเชื่อมต่อ LINE...</span></div>
+
+  <div id="promoBanner" class="promo-bn" hidden role="status"></div>
 
   <form id="bookingForm" novalidate>
     <!-- 1 บริการ -->
@@ -253,6 +262,24 @@ const SERVICE_MAP = { thai:"นวดไทย", thaioil:"นวดไทยอ�
 /* ================== state ================== */
 let SERVICES = [];           // [{id,name,durations:[{min,price}]}]
 const S = { service:null, dur:null, doctor:null, date:null, time:null };
+let PROMO = null;   // โปรที่มาจากหน้าโปรโมชั่น (?promo=รหัส) — ราคาจริงคิดฝั่งเซิร์ฟเวอร์
+function promoApplies(){
+  if (!PROMO || !S.service || !S.dur) return false;
+  if (PROMO.service && norm(PROMO.service) !== norm(S.service.name)) return false;
+  if (PROMO.minutes && PROMO.minutes !== S.dur.min) return false;
+  return true;
+}
+function priceNow(){ return promoApplies() && PROMO.service && PROMO.price ? PROMO.price : (S.dur && S.dur.price) || 0; }
+function renderPromoBanner(){
+  const b = $('promoBanner'); if (!PROMO){ b.hidden = true; return; }
+  const ok = promoApplies();
+  const need = [PROMO.service, PROMO.minutes && durLabel(PROMO.minutes)].filter(Boolean).join(' ');
+  b.className = 'promo-bn' + (ok ? '' : ' off');
+  b.innerHTML = `<span class="tag">โปร</span><div><strong>${esc(PROMO.title)}</strong><small>${
+    ok ? (PROMO.price && PROMO.service ? 'ราคาโปร ' + baht(PROMO.price) + (PROMO.normal > PROMO.price ? ' (ปกติ ' + baht(PROMO.normal) + ')' : '') : 'ใช้โปรนี้กับการจองครั้งนี้')
+       : 'เลือก ' + esc(need) + ' เพื่อใช้โปรนี้'}</small></div>`;
+  b.hidden = false;
+}
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -426,7 +453,9 @@ function renderSlots(){
 function updateBar(){
   const s = S.service, d = S.dur;
   $('bbLabel').textContent = s ? [s.name, d && durLabel(d.min), S.time && (S.time + ' น.')].filter(Boolean).join(' · ') : 'ยังไม่ได้เลือกบริการ';
-  $('bbPrice').textContent = d ? (d.price ? baht(d.price) : 'ราคาตามหน้าร้าน') : (s ? 'เลือกระยะเวลา' : '—');
+  const pr = priceNow();
+  $('bbPrice').textContent = d ? (pr ? baht(pr) : 'ราคาตามหน้าร้าน') : (s ? 'เลือกระยะเวลา' : '—');
+  renderPromoBanner();
 }
 function showErr(key, show){ const el = document.querySelector(`[data-err="${key}"]`); if (el) el.hidden = !show; }
 
@@ -481,10 +510,12 @@ function summaryHTML(extra){
     ['บริการ', S.service.name], ['ระยะเวลา', durLabel(S.dur.min)], ['หมอนวด', S.doctor === ANY_DOCTOR ? 'ไม่ระบุ (ร้านจัดให้)' : S.doctor],
     ['วันที่', thaiLongDate(S.date)], ['เวลา', `${S.time}–${end} น.`],
     ['ผู้จอง', $('customerName').value.trim()], ['เบอร์โทร', formatPhone(cleanPhone($('customerPhone').value))],
+    ...(promoApplies() ? [['โปรโมชั่น', PROMO.title]] : []),
     ...(extra || []),
   ];
+  const pr = priceNow(), normal = S.dur.price;
   return rows.map(([k, v]) => `<div class="row"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join('')
-    + `<div class="row total"><span class="k">ราคา</span><span class="v">${S.dur.price ? baht(S.dur.price) : 'ราคาตามหน้าร้าน'}</span></div>`;
+    + `<div class="row total"><span class="k">ราคา</span><span class="v">${pr && normal > pr ? `<s>${baht(normal)}</s>` : ''}${pr ? baht(pr) : 'ราคาตามหน้าร้าน'}</span></div>`;
 }
 
 /* modal helpers */
@@ -519,7 +550,8 @@ $('confirmBtn').addEventListener('click', async () => {
   const payload = {
     service: S.service.name,
     serviceId: S.service.id || '',
-    price: S.dur.price || null,
+    price: priceNow() || null,
+    promoId: promoApplies() ? PROMO.id : '',
     doctor: S.doctor,
     duration: durationVal,
     date: S.date,
@@ -604,6 +636,16 @@ function checkRadio(name, value){
 async function prefillFromMenu(){
   const p = getMenuParams();
   const svcId = p.get('service'), svcName = p.get('svc_name'), durMin = Number(p.get('dur'));
+  const promoId = p.get('promo');
+  if (promoId){
+    try{
+      const r = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ action:'promos' }) });
+      const d = await r.json();
+      PROMO = (d.promos || []).find(x => x.id === promoId) || null;
+      if (!PROMO) setStatus('', 'โปรโมชั่นนี้หมดเขตแล้ว — จองได้ในราคาปกติ');
+    }catch(e){}
+    renderPromoBanner();
+  }
   if (svcId || svcName){
     let idx = SERVICES.findIndex(s => s.id && s.id === svcId);
     if (idx < 0) idx = SERVICES.findIndex(s => norm(s.name) === norm(svcName));
