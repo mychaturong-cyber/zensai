@@ -33,6 +33,10 @@
   .empty{background:var(--c-surface);border:1px solid var(--c-line);border-radius:var(--r-lg);padding:var(--sp-6) var(--sp-4);text-align:center;display:flex;flex-direction:column;gap:var(--sp-3);align-items:center}
   .empty p{color:var(--c-text-2)}
   .links{display:flex;gap:var(--sp-2);flex-wrap:wrap;justify-content:center}
+  .mcard .perks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
+  .mcard .perks li{display:flex;gap:var(--sp-2);align-items:flex-start;font-size:var(--fs-sm)}
+  .mcard .perks li::before{content:"✓";color:var(--c-gold);font-weight:700}
+  .mcard .note{font-size:var(--fs-xs);color:var(--c-text-2)}
 </style>
 </head>
 <body>
@@ -64,6 +68,7 @@ const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbzGYGDZ9U1p-C6fhe0xOBfk2Kd2uC1qpuZTYIqtyW0Fg2zHU_-hNtagqy3VfTC_7IYmIg/exec',
   BOOKING_URL: 'https://liff.line.me/2012242488-OK0d3lhO/',
   MENU_URL: 'https://liff.line.me/2012242488-9FyrgqQd',
+  POINTS_URL: 'https://liff.line.me/2012242488-MQcweAjg',   // หน้าบัตรสะสมแต้ม
 };
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -79,6 +84,23 @@ function bookUrl(p){
   return CONFIG.BOOKING_URL + '?' + q;
 }
 
+// การ์ดสมาชิกสะสมแต้ม (ตัวเลขจากแท็บ "ตั้งค่า")
+function memberCard(s){
+  const rate = Number(s.pointsPer100) || 0, goal = Number(s.rewardPoints) || 0, label = s.rewardLabel || '';
+  if (!rate) return '';
+  return `<article class="pcard mcard">
+    <div class="band"><span class="tag">สมาชิก</span><strong>สะสมแต้มกับเส้นสาย</strong></div>
+    <div class="body">
+      <ul class="perks">
+        <li>ทุก 100 บาท รับ ${rate} แต้ม</li>
+        ${goal > 0 && label ? `<li>ครบ ${goal.toLocaleString('th-TH')} แต้ม แลก${esc(label)}</li>` : ''}
+        <li>ผูกเบอร์โทรครั้งเดียว สะสมได้ทั้งจองผ่าน LINE และมาที่ร้าน</li>
+      </ul>
+      <p class="note">* รายการโปรโมชั่นและบริการฟรีไม่ได้รับแต้ม ดูเงื่อนไขทั้งหมดในหน้าบัตรสะสมแต้ม</p>
+      <a class="btn btn-primary" href="${CONFIG.POINTS_URL}">สมัครสมาชิก / ดูแต้มของฉัน</a>
+    </div></article>`;
+}
+
 function render(data){
   const s = data.settings || {};
   if (s.phone) document.querySelectorAll('[data-shop="phone"]').forEach(el => { el.textContent = s.phone; el.href = 'tel:' + String(s.phone).replace(/\D/g, ''); });
@@ -90,7 +112,7 @@ function render(data){
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" style="color:var(--c-gold)"><path d="M20 12v8H4v-8M2 7h20v5H2zM12 20V7M12 7H8a2 2 0 1 1 0-4c2 0 4 4 4 4zm0 0h4a2 2 0 1 0 0-4c-2 0-4 4-4 4z"/></svg>
       <strong>ยังไม่มีโปรโมชั่นในขณะนี้</strong>
       <p>ติดตามโปรใหม่ได้ทาง LINE ของร้าน หรือดูเมนูและราคาปกติได้เลย</p>
-      <div class="links"><a class="btn btn-primary" href="${CONFIG.MENU_URL}">ดูเมนูทั้งหมด</a><a class="btn btn-secondary" href="${CONFIG.BOOKING_URL}">จองคิว</a></div></div>`;
+      <div class="links"><a class="btn btn-primary" href="${CONFIG.MENU_URL}">ดูเมนูทั้งหมด</a><a class="btn btn-secondary" href="${CONFIG.BOOKING_URL}">จองคิว</a></div></div>` + memberCard(s);
     return;
   }
   $('list').innerHTML = head + `<p class="lead">ราคาพิเศษสำหรับลูกค้าเส้นสาย กดจองได้ทันที</p>` + promos.map(p => {
@@ -104,7 +126,7 @@ function render(data){
         ${p.end ? `<div class="until"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>ถึงวันที่ ${thDate(p.end)}</div>` : ''}
         <a class="btn btn-primary" href="${p.service ? esc(bookUrl(p)) : CONFIG.BOOKING_URL}">จองโปรนี้</a>
       </div></article>`;
-  }).join('');
+  }).join('') + memberCard(s);
 }
 
 async function load(){
