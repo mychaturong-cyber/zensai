@@ -34,6 +34,13 @@
   .link p{font-size:var(--fs-sm);color:var(--c-text-2);margin:0}
   .link .row2{display:flex;gap:var(--sp-2)} .link .row2 .input{flex:1}
   .link .linked{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2);font-size:var(--fs-sm)}
+  .terms{padding:0}
+  .terms summary{cursor:pointer;padding:var(--sp-3) var(--sp-4);font-weight:600;font-size:var(--fs-sm);list-style:none;display:flex;justify-content:space-between;align-items:center}
+  .terms summary::-webkit-details-marker{display:none}
+  .terms summary::after{content:"+";font-size:var(--fs-lg);color:var(--c-text-2)}
+  .terms[open] summary::after{content:"−"}
+  .terms ol{margin:0;padding:0 var(--sp-4) var(--sp-4) calc(var(--sp-4) + 1.2em);font-size:var(--fs-xs);color:var(--c-text-2);line-height:1.6}
+  .terms ol li{display:list-item;padding:2px 0;border:0}
   .empty{justify-content:center;color:var(--c-text-2);font-size:var(--fs-sm);padding:var(--sp-6) var(--sp-4)}
 </style>
 </head>
@@ -83,6 +90,11 @@
   <h2>ประวัติแต้ม</h2>
   <ul class="card" id="hist"><li class="empty">กำลังโหลด...</li></ul>
 
+  <details class="card terms" id="terms">
+    <summary>เงื่อนไขการสะสมและใช้แต้ม</summary>
+    <ol id="termsList"></ol>
+  </details>
+
   <button class="btn btn-primary btn-block" id="bookBtn">จองคิวนวด</button>
 
   <footer class="site-footer" aria-label="ข้อมูลร้าน" style="margin-top:var(--sp-2)">
@@ -103,7 +115,27 @@ const CONFIG = {
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const TYPE_LABEL = { earn:'ได้รับแต้ม', reverse:'หักคืน (ยกเลิก)', redeem:'ใช้แต้มแลกของรางวัล', redeem_cancel:'คืนแต้ม', adjust:'ปรับแต้ม' };
+const TYPE_LABEL = { earn:'ได้รับแต้ม', reverse:'หักคืน (ยกเลิก)', redeem:'ใช้แต้มแลกของรางวัล', redeem_cancel:'คืนแต้ม', adjust:'ปรับแต้ม', expire:'แต้มหมดอายุ' };
+
+function renderTerms(rate, goal, label){
+  const t = [
+    `ทุกยอดชำระ 100 บาท รับ ${rate || 10} แต้ม คิดจากยอดที่ชำระจริง เศษที่ไม่ถึง 100 บาทไม่นับ`,
+    'แต้มเข้าบัตรอัตโนมัติหลังใช้บริการและชำระเงินเรียบร้อย',
+    'ลูกค้าที่จองหน้าร้าน กรุณาแจ้งเบอร์โทรที่ผูกไว้กับพนักงานทุกครั้ง แต้มนับตั้งแต่วันที่ผูกเบอร์เป็นต้นไป',
+    'หนึ่งบัญชี LINE ผูกได้หนึ่งเบอร์โทร และเบอร์หนึ่งเบอร์ผูกได้กับบัญชีเดียว',
+    goal > 0 && label ? `สะสมครบ ${goal.toLocaleString('th-TH')} แต้ม แลก${esc(label)}ได้ โดยแจ้งพนักงานตอนชำระเงิน` : '',
+    'หากยกเลิกคิวหรือยกเลิกรายการหลังได้รับแต้ม ร้านจะหักแต้มของรายการนั้นคืน',
+    'บริการฟรีและรายการโปรโมชั่นพิเศษ ไม่ได้รับแต้ม',
+    'แต้มไม่สามารถแลกหรือทอนเป็นเงินสด และไม่สามารถโอนให้ผู้อื่นได้',
+    'แต้มมีอายุ 1 ปี นับจากวันที่ได้รับ แต้มที่หมดอายุจะถูกตัดออกอัตโนมัติ',
+    'สิทธิ์แลกแต้มใช้ร่วมกับโปรโมชั่นอื่นไม่ได้ และใช้ได้ครั้งละ 1 สิทธิ์ต่อการใช้บริการ',
+    'หากตรวจพบการสะสมแต้มโดยทุจริตหรือไม่ถูกต้อง ร้านขอสงวนสิทธิ์ยกเลิกแต้มและสิทธิ์สมาชิก',
+    'ร้านขอสงวนสิทธิ์ในการเปลี่ยนแปลงอัตราแต้ม ของรางวัล และเงื่อนไขต่าง ๆ โดยไม่ต้องแจ้งให้ทราบล่วงหน้า',
+    'การตัดสินของร้านถือเป็นที่สิ้นสุด'
+  ].filter(Boolean);
+  $('termsList').innerHTML = t.map(x => `<li>${x}</li>`).join('');
+}
+renderTerms(10, 500, 'ส่วนลดเงินสด 350 บาท');
 
 $('rule').hidden = true;
 $('bookBtn').addEventListener('click', () => { location.href = CONFIG.BOOKING_URL; });
@@ -147,6 +179,7 @@ function render(data, name){
     + (hasReward ? ` · ครบ ${goal.toLocaleString('th-TH')} แต้ม แลก ${esc(label)}` : '')
     + '<br>แต้มเข้าอัตโนมัติหลังใช้บริการเสร็จ';
   $('rule').hidden = false;
+  renderTerms(rate, goal, label);
   $('barWrap').hidden = !hasReward; $('goal').hidden = !hasReward;
   document.querySelectorAll('[data-shop="hours"]').forEach(el => { if (st.openTime) el.textContent = `เปิดทุกวัน ${st.openTime}–${st.closeTime} น.`; });
   document.querySelectorAll('[data-shop="phone"]').forEach(el => { if (st.phone){ el.textContent = st.phone; el.href = 'tel:' + String(st.phone).replace(/\D/g, ''); } });
