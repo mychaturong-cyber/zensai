@@ -36,6 +36,12 @@
   .promo-bn strong{display:block}
   .promo-bn small{display:block;opacity:.85;font-size:var(--fs-sm)}
   .promo-bn.off{background:var(--c-muted-bg);color:var(--c-text)}
+  .close-bn{display:flex;gap:var(--sp-3);align-items:flex-start;background:var(--c-danger-bg);color:var(--c-danger);border-radius:var(--r-lg);padding:var(--sp-3) var(--sp-4);margin-bottom:var(--sp-4);font-size:var(--fs-sm)}
+  .close-bn strong{display:block;font-size:var(--fs-md)}
+  .close-bn ul{margin:4px 0 0;padding-left:18px}
+  .date-chip:has(input:disabled){background:var(--c-muted-bg);border-style:dashed;cursor:not-allowed}
+  .date-chip:has(input:disabled) .d1{color:var(--c-danger);font-weight:700}
+  .date-chip:has(input:disabled) .d2{color:#6A6B60;text-decoration:line-through;font-weight:400}
   .total s{color:var(--c-text-2);font-weight:400;margin-right:6px}
   .choice.compact{flex-direction:column;align-items:flex-start;gap:2px;min-height:64px}
   .choice.compact .tick{position:absolute;top:10px;right:10px;width:20px;height:20px}
@@ -119,6 +125,7 @@
   <p class="page-sub">เลือกบริการ หมอ และเวลาที่สะดวก ใช้เวลาไม่ถึง 1 นาที</p>
   <div id="lineStatus" class="status-line" role="status"><span class="dot"></span><span>กำลังเชื่อมต่อ LINE...</span></div>
 
+  <div id="closeBanner" class="close-bn" hidden role="status"></div>
   <div id="promoBanner" class="promo-bn" hidden role="status"></div>
 
   <form id="bookingForm" novalidate>
@@ -307,6 +314,20 @@ function useCatalog(c){
   if (c.doctorOffDays) DOCTOR_OFF = c.doctorOffDays;
   CHECKED_IN = { date: c.today || '', names: c.checkedInToday || [] };
   LEAVE = c.leave || {};
+  CLOSURES = Array.isArray(c.closures) ? c.closures : [];
+}
+/* ================== วันปิดร้าน (แท็บ วันปิดร้าน) ================== */
+let CLOSURES = [];   // [{start:'yyyy-mm-dd', end:'yyyy-mm-dd', message}]
+const closedOn = iso => iso ? CLOSURES.find(c => iso >= c.start && iso <= c.end) || null : null;
+const thShort = iso => { const [y, m, d] = iso.split('-').map(Number); return new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short' }).format(new Date(y, m - 1, d)); };
+const closureRange = c => c.start === c.end ? thShort(c.start) : thShort(c.start) + ' – ' + thShort(c.end);
+function renderCloseBanner(){
+  const b = $('closeBanner'), today = isoDate(new Date());
+  const list = CLOSURES.filter(c => c.end >= today);
+  if (!list.length){ b.hidden = true; return; }
+  b.innerHTML = `<div><strong>ร้านปิดชั่วคราว</strong><ul>${list.map(c =>
+    `<li>${esc(closureRange(c))}${c.message ? ' · ' + esc(c.message) : ''}</li>`).join('')}</ul>วันที่ร้านปิดจะเลือกจองไม่ได้</div>`;
+  b.hidden = false;
 }
 function applyShopInfo(){
   const h = `ร้านเปิดทุกวัน ${CFG.openTime}–${CFG.closeTime} น.`;
@@ -332,6 +353,13 @@ async function loadCatalog(){
   if (!SERVICES.length)               // ไม่มีทั้งข้อมูลสด/ที่จำไว้: ใช้รายการเดิมของร้าน (ไม่มีราคา) ให้ลูกค้ายังจองได้
     SERVICES = FALLBACK_SERVICES.map(n => ({ id: '', name: n, durations: FALLBACK_DURATIONS.map(min => ({ min, price: 0 })) }));
   applyShopInfo();
+  if (closedOn(S.date)){   // วันเริ่มต้นตรงกับวันปิด: เลื่อนไปวันแรกที่ร้านเปิด
+    const [y, m, d] = S.date.split('-').map(Number);
+    let i = 1, next = '';
+    do { next = isoDate(new Date(y, m - 1, d + i)); i++; } while (closedOn(next) && i < 120);
+    S.date = closedOn(next) ? null : next; S.time = null;
+  }
+  renderCloseBanner(); renderDates();
   renderServices(); renderDoctors(); renderSlots();
   loadBusy(S.date);
 }
@@ -412,9 +440,10 @@ function renderDates(){
   const today = new Date(); let html = '';
   for (let i = 0; i < 8; i++){
     const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
-    const iso = isoDate(d);
-    html += `<label class="choice date-chip"><input type="radio" name="date" value="${iso}" ${S.date === iso ? 'checked' : ''}>
-      <span class="d1">${i === 0 ? 'วันนี้' : i === 1 ? 'พรุ่งนี้' : fmt1.format(d)}</span><span class="d2">${fmt2.format(d)}</span></label>`;
+    const iso = isoDate(d), closed = closedOn(iso);
+    html += `<label class="choice date-chip"><input type="radio" name="date" value="${iso}" ${S.date === iso ? 'checked' : ''} ${closed ? 'disabled' : ''}
+      aria-label="${fmt2.format(d)}${closed ? ' (ร้านปิด)' : ''}">
+      <span class="d1">${closed ? 'ร้านปิด' : i === 0 ? 'วันนี้' : i === 1 ? 'พรุ่งนี้' : fmt1.format(d)}</span><span class="d2">${fmt2.format(d)}</span></label>`;
   }
   $('dateList').innerHTML = html;
   $('otherDate').min = isoDate(today);
@@ -426,11 +455,12 @@ function renderSlots(){
   const last = toMin(CFG.closeTime) - dur, step = Number(CFG.slotStep) || 30;
   const info = BUSY[S.date];
   const known = info && typeof info === 'object';
+  const shopClosed = closedOn(S.date);
   const specific = S.doctor && S.doctor !== ANY_DOCTOR;
   let html = '', free = 0, full = 0;
   for (let m = toMin(CFG.openTime); m <= toMin(CFG.closeTime) - step; m += step){
     const t = fromMin(m);
-    const closed = (isToday && m <= nowMin) || m > last;
+    const closed = !!shopClosed || (isToday && m <= nowMin) || m > last;
     const isFull = !closed && known && (specific ? !doctorFree(info, S.doctor, m, dur)
                                                  : !AVAIL_DOCS.some(d => doctorFree(info, d, m, dur)));
     const off = closed || isFull;
@@ -446,7 +476,8 @@ function renderSlots(){
     + (info === 'loading' ? 'กำลังตรวจคิวว่าง…'
        : known ? (full ? `ช่องที่ขีดฆ่าคือเวลาที่${who}ไม่ว่าง หรือเกินเวลาปิดร้าน` : '')
        : 'ระบบจะตรวจคิวของหมออีกครั้งเมื่อกดยืนยัน');
-  $('slotEmpty').textContent = full ? `${specific ? S.doctor + ' ' : ''}คิวเต็มทั้งวันสำหรับระยะเวลานี้ ลองเลือก${specific ? 'หมอท่านอื่น "ให้ร้านจัดให้" หรือ' : ''}วันอื่น`
+  $('slotEmpty').textContent = shopClosed ? `ร้านปิดวันที่เลือก${shopClosed.message ? ' (' + shopClosed.message + ')' : ''} กรุณาเลือกวันอื่น`
+    : full ? `${specific ? S.doctor + ' ' : ''}คิวเต็มทั้งวันสำหรับระยะเวลานี้ ลองเลือก${specific ? 'หมอท่านอื่น "ให้ร้านจัดให้" หรือ' : ''}วันอื่น`
     : isToday ? 'วันนี้ไม่มีช่วงเวลาที่จองได้แล้ว กรุณาเลือกวันอื่น' : 'ไม่มีช่วงเวลาที่พอสำหรับระยะเวลานี้ กรุณาเลือกระยะเวลาที่สั้นลง';
   updateBar();
 }
@@ -467,6 +498,14 @@ form.addEventListener('change', e => {
   if (t.name === 'dur'){ S.dur = S.service.durations.find(d => d.min === Number(t.value)); renderSlots(); showErr('duration', false); }
   if (t.name === 'doctor'){ S.doctor = t.value; showErr('doctor', false); renderSlots(); }
   if (t.name === 'date'){ S.date = t.value; $('otherDate').value = ''; renderDoctors(); loadBusy(S.date); }
+  if (t.id === 'otherDate' && t.value && closedOn(t.value)){
+    const c = closedOn(t.value); t.value = ''; S.date = null; S.time = null;
+    document.querySelectorAll('input[name=date]').forEach(r => r.checked = false);
+    renderDoctors(); renderSlots();
+    $('slotEmpty').textContent = `ร้านปิด ${closureRange(c)}${c.message ? ' (' + c.message + ')' : ''} กรุณาเลือกวันอื่น`;
+    $('slotEmpty').hidden = false;
+    return;
+  }
   if (t.id === 'otherDate' && t.value){ S.date = t.value; document.querySelectorAll('input[name=date]').forEach(r => r.checked = (r.value === t.value)); renderDoctors(); loadBusy(S.date); }
   if (t.name === 'time'){ S.time = t.value; showErr('time', false); updateBar(); }
 });
@@ -591,6 +630,9 @@ $('confirmBtn').addEventListener('click', async () => {
     }else{
       if (res.doctorOff){
         $('rvError').innerHTML = `<div><strong>${esc(res.error)}</strong><br>กด "แก้ไขข้อมูล" แล้วเลือกใหม่</div>`;
+        $('rvError').hidden = false;
+      } else if (res.shopClosed){
+        $('rvError').innerHTML = `<div><strong>${esc(res.error)}</strong><br>กด "แก้ไขข้อมูล" แล้วเลือกวันใหม่</div>`;
         $('rvError').hidden = false;
       } else if (res.noDoctorFree){
         loadBusy(S.date, true);
