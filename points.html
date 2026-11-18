@@ -42,6 +42,9 @@
   .terms ol{margin:0;padding:0 var(--sp-4) var(--sp-4) calc(var(--sp-4) + 1.2em);font-size:var(--fs-xs);color:var(--c-text-2);line-height:1.6}
   .terms ol li{display:list-item;padding:2px 0;border:0}
   .empty{justify-content:center;color:var(--c-text-2);font-size:var(--fs-sm);padding:var(--sp-6) var(--sp-4)}
+  .close-bn{display:flex;gap:12px;align-items:flex-start;background:var(--c-danger-bg);color:var(--c-danger);border-radius:var(--r-lg);padding:12px 16px;margin:12px auto 0;font-size:var(--fs-sm)}
+  .close-bn strong{display:block;font-size:var(--fs-md)}
+  .close-bn ul{margin:4px 0 0;padding-left:18px}
 </style>
 </head>
 <body>
@@ -52,6 +55,7 @@
   </div>
   <div class="brand-line"></div>
 </header>
+<div class="container" id="closeWrap" hidden><div class="close-bn" role="status"><div id="closeBanner"></div></div></div>
 <main class="container">
   <h1 class="page-title">บัตรสะสมแต้ม</h1>
 
@@ -104,6 +108,25 @@
   </footer>
 </main>
 
+<script>
+/* แถบแจ้งร้านปิด (แท็บ วันปิดร้าน): แสดงระหว่างปิด และล่วงหน้าตาม closureNoticeDays ในแท็บ ตั้งค่า */
+function renderClosureBanner(list, noticeDays){
+  const wrap = document.getElementById('closeWrap'); if (!wrap) return;
+  const p2 = n => String(n).padStart(2, '0'), now = new Date();
+  const today = now.getFullYear() + '-' + p2(now.getMonth() + 1) + '-' + p2(now.getDate());
+  const days = Number.isFinite(Number(noticeDays)) && noticeDays !== '' && noticeDays !== undefined ? Number(noticeDays) : 7;
+  const toD = iso => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); };
+  const until = iso => Math.round((toD(iso) - toD(today)) / 86400000);
+  const fmt = iso => new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short' }).format(toD(iso));
+  const e = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const show = (Array.isArray(list) ? list : []).filter(c => c && c.start && c.end >= today && until(c.start) <= days);
+  if (!show.length){ wrap.hidden = true; return; }
+  const nowClosed = show.some(c => c.start <= today);
+  document.getElementById('closeBanner').innerHTML = `<strong>${nowClosed ? 'วันนี้ร้านปิด' : 'แจ้งวันปิดร้าน'}</strong><ul>${show.map(c =>
+    `<li>${c.start === c.end ? fmt(c.start) : fmt(c.start) + ' – ' + fmt(c.end)}${c.message ? ' · ' + e(c.message) : ''}</li>`).join('')}</ul>`;
+  wrap.hidden = false;
+}
+</script>
 <script>
 /* ================== ตั้งค่า ================== */
 const CONFIG = {
@@ -173,6 +196,7 @@ function render(data, name){
   $('who').textContent = name ? `คุณ${name}` : 'สมาชิกเส้นสาย';
   $('bal').textContent = data.balance.toLocaleString('th-TH');
   const st = data.settings || {};
+  renderClosureBanner(data.closures, st.closureNoticeDays);
   const rate = Number(st.pointsPer100) || 0, goal = Number(st.rewardPoints) || 0, label = st.rewardLabel || '';
   const hasReward = goal > 0 && label;
   $('rule').innerHTML = (rate ? `ทุก 100 บาท รับ <strong>${rate} แต้ม</strong>` : '')
