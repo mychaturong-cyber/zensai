@@ -122,7 +122,9 @@ function renderClosureBanner(list, noticeDays){
   const show = (Array.isArray(list) ? list : []).filter(c => c && c.start && c.end >= today && until(c.start) <= days);
   if (!show.length){ wrap.hidden = true; return; }
   const nowClosed = show.some(c => c.start <= today);
-  document.getElementById('closeBanner').innerHTML = `<strong>${nowClosed ? 'วันนี้ร้านปิด' : 'แจ้งวันปิดร้าน'}</strong><ul>${show.map(c =>
+  const nDays = c => Math.round((toD(c.end) - toD(c.start)) / 86400000) + 1;
+  const head = nowClosed ? 'วันนี้ร้านหยุด' : show.length === 1 ? `ร้านหยุด ${nDays(show[0])} วัน` : 'แจ้งวันหยุดร้าน';
+  document.getElementById('closeBanner').innerHTML = `<strong>${head}</strong><ul>${show.map(c =>
     `<li>${c.start === c.end ? fmt(c.start) : fmt(c.start) + ' – ' + fmt(c.end)}${c.message ? ' · ' + e(c.message) : ''}</li>`).join('')}</ul>`;
   wrap.hidden = false;
 }
