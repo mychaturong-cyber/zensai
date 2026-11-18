@@ -325,8 +325,11 @@ function renderCloseBanner(){
   const b = $('closeBanner'), today = isoDate(new Date());
   const list = CLOSURES.filter(c => c.end >= today);
   if (!list.length){ b.hidden = true; return; }
-  b.innerHTML = `<div><strong>ร้านปิดชั่วคราว</strong><ul>${list.map(c =>
-    `<li>${esc(closureRange(c))}${c.message ? ' · ' + esc(c.message) : ''}</li>`).join('')}</ul>วันที่ร้านปิดจะเลือกจองไม่ได้</div>`;
+  const nDays = c => { const [y1, m1, d1] = c.start.split('-').map(Number), [y2, m2, d2] = c.end.split('-').map(Number);
+    return Math.round((new Date(y2, m2 - 1, d2) - new Date(y1, m1 - 1, d1)) / 86400000) + 1; };
+  const head = list.length === 1 ? `ร้านหยุด ${nDays(list[0])} วัน` : 'วันหยุดร้าน';
+  b.innerHTML = `<div><strong>${head}</strong><ul>${list.map(c =>
+    `<li>${esc(closureRange(c))}${c.message ? ' · ' + esc(c.message) : ''}</li>`).join('')}</ul>วันที่ร้านหยุดจะเลือกจองไม่ได้</div>`;
   b.hidden = false;
 }
 function applyShopInfo(){
@@ -442,8 +445,8 @@ function renderDates(){
     const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
     const iso = isoDate(d), closed = closedOn(iso);
     html += `<label class="choice date-chip"><input type="radio" name="date" value="${iso}" ${S.date === iso ? 'checked' : ''} ${closed ? 'disabled' : ''}
-      aria-label="${fmt2.format(d)}${closed ? ' (ร้านปิด)' : ''}">
-      <span class="d1">${closed ? 'ร้านปิด' : i === 0 ? 'วันนี้' : i === 1 ? 'พรุ่งนี้' : fmt1.format(d)}</span><span class="d2">${fmt2.format(d)}</span></label>`;
+      aria-label="${fmt2.format(d)}${closed ? ' (ร้านหยุด)' : ''}">
+      <span class="d1">${closed ? 'ร้านหยุด' : i === 0 ? 'วันนี้' : i === 1 ? 'พรุ่งนี้' : fmt1.format(d)}</span><span class="d2">${fmt2.format(d)}</span></label>`;
   }
   $('dateList').innerHTML = html;
   $('otherDate').min = isoDate(today);
@@ -476,7 +479,7 @@ function renderSlots(){
     + (info === 'loading' ? 'กำลังตรวจคิวว่าง…'
        : known ? (full ? `ช่องที่ขีดฆ่าคือเวลาที่${who}ไม่ว่าง หรือเกินเวลาปิดร้าน` : '')
        : 'ระบบจะตรวจคิวของหมออีกครั้งเมื่อกดยืนยัน');
-  $('slotEmpty').textContent = shopClosed ? `ร้านปิดวันที่เลือก${shopClosed.message ? ' (' + shopClosed.message + ')' : ''} กรุณาเลือกวันอื่น`
+  $('slotEmpty').textContent = shopClosed ? `ร้านหยุดวันที่เลือก${shopClosed.message ? ' (' + shopClosed.message + ')' : ''} กรุณาเลือกวันอื่น`
     : full ? `${specific ? S.doctor + ' ' : ''}คิวเต็มทั้งวันสำหรับระยะเวลานี้ ลองเลือก${specific ? 'หมอท่านอื่น "ให้ร้านจัดให้" หรือ' : ''}วันอื่น`
     : isToday ? 'วันนี้ไม่มีช่วงเวลาที่จองได้แล้ว กรุณาเลือกวันอื่น' : 'ไม่มีช่วงเวลาที่พอสำหรับระยะเวลานี้ กรุณาเลือกระยะเวลาที่สั้นลง';
   updateBar();
@@ -502,7 +505,7 @@ form.addEventListener('change', e => {
     const c = closedOn(t.value); t.value = ''; S.date = null; S.time = null;
     document.querySelectorAll('input[name=date]').forEach(r => r.checked = false);
     renderDoctors(); renderSlots();
-    $('slotEmpty').textContent = `ร้านปิด ${closureRange(c)}${c.message ? ' (' + c.message + ')' : ''} กรุณาเลือกวันอื่น`;
+    $('slotEmpty').textContent = `ร้านหยุด ${closureRange(c)}${c.message ? ' (' + c.message + ')' : ''} กรุณาเลือกวันอื่น`;
     $('slotEmpty').hidden = false;
     return;
   }
