@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ให้คะแนน · เส้นสาย Zensai Massage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
+<style>
+  main{display:flex;flex-direction:column;gap:var(--sp-4);padding-bottom:var(--sp-8)}
+  .intro{font-size:var(--fs-sm);color:var(--c-text-2);margin:0}
+  .intro strong{color:var(--c-primary)}
+  .q{padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-3)}
+  .q h2{font-size:var(--fs-md);margin:0;display:flex;justify-content:space-between;align-items:baseline;gap:var(--sp-2)}
+  .q h2 small{font-weight:400;font-size:var(--fs-xs);color:var(--c-text-2)}
+  .stars{display:flex;gap:6px}
+  .stars button{flex:1;min-height:var(--tap);border:1px solid var(--c-line);background:var(--c-surface);border-radius:var(--r-md);
+    font-size:26px;line-height:1;color:#d6d1c4;cursor:pointer;padding:6px 0}
+  .stars button.on{color:var(--c-gold);border-color:var(--c-gold);background:#fbf6ea}
+  .hint{font-size:var(--fs-xs);color:var(--c-text-2);min-height:1em;margin:-4px 0 0}
+  .tags{display:flex;flex-wrap:wrap;gap:6px}
+  .tags[hidden]{display:none}
+  .tags button{border:1px solid var(--c-line);background:var(--c-surface);border-radius:var(--r-pill);padding:6px 12px;
+    font:inherit;font-size:var(--fs-sm);color:var(--c-text);cursor:pointer}
+  .tags button.on{background:var(--c-primary);border-color:var(--c-primary);color:#fff}
+  .nps{display:grid;grid-template-columns:repeat(11,1fr);gap:3px}
+  .nps button{min-height:40px;border:1px solid var(--c-line);background:var(--c-surface);border-radius:var(--r-sm);font:inherit;
+    font-size:var(--fs-sm);cursor:pointer;padding:0}
+  .nps button.on{background:var(--c-primary);color:#fff;border-color:var(--c-primary)}
+  .nps-legend{display:flex;justify-content:space-between;font-size:var(--fs-xs);color:var(--c-text-2)}
+  textarea.input{min-height:80px;resize:vertical;font:inherit}
+  .docs{display:flex;flex-wrap:wrap;gap:6px}
+  .state{padding:var(--sp-6) var(--sp-4);text-align:center;display:flex;flex-direction:column;gap:var(--sp-3);align-items:center}
+  .state .big{font-size:48px;line-height:1}
+  .state h2{font-size:var(--fs-lg);margin:0}
+  .state p{margin:0;color:var(--c-text-2);font-size:var(--fs-sm)}
+  .opt{font-weight:400;font-size:var(--fs-xs);color:var(--c-text-2)}
+</style>
+</head>
+<body>
+<header class="brandbar">
+  <div class="container">
+    <img class="brand-logo" src="logo.png" alt="โลโก้เส้นสาย" onerror="this.remove()">
+    <div class="brand-text"><span class="brand-th">เส้นสาย</span><span class="brand-en">Zensai Massage · นวดเพื่อสุขภาพ</span></div>
+  </div>
+  <div class="brand-line"></div>
+</header>
+
+<main class="container" id="app">
+  <div class="card state"><div class="spinner"></div><p>กำลังโหลด...</p></div>
+</main>
+
+<script>
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzGYGDZ9U1p-C6fhe0xOBfk2Kd2uC1qpuZTYIqtyW0Fg2zHU_-hNtagqy3VfTC_7IYmIg/exec";
+const qs = new URLSearchParams(location.search);
+const B = qs.get('b') || '', T = qs.get('t') || '';
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const TAGS = {
+  doctor: {
+    good: ['แรงกำลังดี','กดตรงจุด','ถามความรู้สึกระหว่างนวด','สุภาพ เป็นมิตร','มือสะอาด','นวดครบเวลา'],
+    bad:  ['แรงไป','เบาไป','คุยเยอะ','รีบ ไม่ครบเวลา','ไม่ตรงจุดที่ขอ']
+  },
+  place: {
+    good: ['สะอาด','กลิ่นหอม','เงียบ ผ่อนคลาย','อุณหภูมิกำลังดี','ห้องน้ำสะอาด','ที่จอดรถสะดวก'],
+    bad:  ['ผ้า/เตียงไม่สะอาด','มีเสียงดัง','ร้อนหรือหนาวไป','มีกลิ่นอับ','หาร้านยาก']
+  },
+  service: {
+    good: ['จองผ่าน LINE ง่าย','ได้คิวตรงเวลา','ต้อนรับดี','มีน้ำ/ชาเสิร์ฟ'],
+    bad:  ['รอคิวนาน','จองยาก','ชำระเงินไม่สะดวก']
+  }
+};
+const STAR_HINT = ['', 'ต้องปรับปรุง', 'พอใช้', 'ปานกลาง', 'ดี', 'ดีมาก'];
+const ans = { doctor: 0, place: 0, service: 0, value: 0, nps: '', doctorTags: [], placeTags: [], serviceTags: [], doctorName: '' };
+
+async function api(body) {
+  const r = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
+  return r.json();
+}
+
+function stateView(icon, title, text, extra) {
+  $('app').innerHTML = `<div class="card state"><div class="big">${icon}</div><h2>${esc(title)}</h2><p>${esc(text)}</p>${extra || ''}</div>`;
+}
+
+function starBlock(key, title, opt) {
+  return `<section class="card q" data-q="${key}">
+    <h2>${title}${opt ? ' <small>ไม่บังคับ</small>' : ''}</h2>
+    <div class="stars" role="radiogroup" aria-label="${title}">
+      ${[1,2,3,4,5].map(n => `<button type="button" data-k="${key}" data-v="${n}" aria-label="${n} ดาว">★</button>`).join('')}
+    </div>
+    <p class="hint" id="hint-${key}"></p>
+    ${TAGS[key] ? `<div class="tags" id="tags-${key}" hidden></div>` : ''}
+  </section>`;
+}
+
+function renderForm(info) {
+  const qr = info.mode === 'qr';
+  $('app').innerHTML = `
+    <h1 class="page-title">ให้คะแนนการนวด</h1>
+    <p class="intro">${qr ? 'ขอบคุณที่ใช้บริการค่ะ ช่วยบอกเราหน่อยว่าเป็นอย่างไรบ้าง' :
+      `${esc(info.service)} กับ <strong>${esc(info.doctor)}</strong> · ${esc(info.date)}<br>ใช้เวลาไม่ถึง 1 นาที${info.points > 0 ? ` · ตอบแล้วรับ <strong>+${info.points} แต้ม</strong> 🎁` : ''}`}</p>
+    ${qr ? `<section class="card q"><h2>หมอที่นวดให้</h2><div class="docs tags" id="docs">
+      ${info.doctors.map(d => `<button type="button" data-doc="${esc(d)}">${esc(d)}</button>`).join('')}</div>
+      <input class="input" id="qrName" maxlength="60" placeholder="ชื่อของคุณ (ไม่บังคับ)"></section>` : ''}
+    ${starBlock('doctor', '1. หมอ')}
+    ${starBlock('place', '2. ร้านและสถานที่', true)}
+    ${starBlock('service', '3. บริการหน้าร้านและการจอง', true)}
+    ${starBlock('value', '4. ความคุ้มค่า', true)}
+    <section class="card q"><h2>5. จะแนะนำร้านให้เพื่อนไหม <small>ไม่บังคับ</small></h2>
+      <div class="nps">${[...Array(11).keys()].map(n => `<button type="button" data-nps="${n}">${n}</button>`).join('')}</div>
+      <div class="nps-legend"><span>ไม่แนะนำเลย</span><span>แนะนำแน่นอน</span></div>
+    </section>
+    <section class="card q"><h2>ครั้งหน้าอยากได้อะไรเพิ่ม <small>ไม่บังคับ</small></h2>
+      <input class="input" id="want" maxlength="200" placeholder="เช่น บริการใหม่ เวลาเปิด เครื่องดื่ม">
+      <h2>ความเห็นเพิ่มเติม <small>ไม่บังคับ</small></h2>
+      <textarea class="input" id="comment" maxlength="500" placeholder="อยากบอกอะไรกับหมอหรือร้าน เขียนได้เลยค่ะ"></textarea>
+    </section>
+    <div class="alert alert-error" id="err" hidden></div>
+    <button class="btn btn-primary btn-block" id="send" type="button">ส่งความเห็น</button>`;
+
+  $('app').addEventListener('click', onClick);
+}
+
+function renderTags(key) {
+  const box = $('tags-' + key); if (!box) return;
+  const v = ans[key]; if (!v) { box.hidden = true; return; }
+  const list = v >= 4 ? TAGS[key].good : TAGS[key].bad;
+  const sel = ans[key + 'Tags'] = ans[key + 'Tags'].filter(t => list.includes(t));
+  box.innerHTML = `<span class="opt" style="width:100%">${v >= 4 ? 'ชอบอะไรบ้าง' : 'ควรปรับปรุงเรื่องไหน'} (เลือกได้หลายข้อ)</span>` +
+    list.map(t => `<button type="button" data-tag="${key}" class="${sel.includes(t) ? 'on' : ''}">${esc(t)}</button>`).join('');
+  box.hidden = false;
+}
+
+function onClick(e) {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.k) {
+    const k = b.dataset.k, v = Number(b.dataset.v);
+    ans[k] = ans[k] === v && k !== 'doctor' ? 0 : v;
+    b.parentNode.querySelectorAll('button').forEach(x => x.classList.toggle('on', Number(x.dataset.v) <= ans[k]));
+    $('hint-' + k).textContent = STAR_HINT[ans[k]] || '';
+    renderTags(k);
+  } else if (b.dataset.tag) {
+    const k = b.dataset.tag + 'Tags', t = b.textContent;
+    ans[k] = ans[k].includes(t) ? ans[k].filter(x => x !== t) : ans[k].concat(t);
+    b.classList.toggle('on');
+  } else if (b.dataset.nps !== undefined) {
+    const n = Number(b.dataset.nps);
+    ans.nps = ans.nps === n ? '' : n;
+    document.querySelectorAll('[data-nps]').forEach(x => x.classList.toggle('on', Number(x.dataset.nps) === ans.nps));
+  } else if (b.dataset.doc !== undefined) {
+    ans.doctorName = b.dataset.doc;
+    document.querySelectorAll('[data-doc]').forEach(x => x.classList.toggle('on', x === b));
+  } else if (b.id === 'send') {
+    submit(b);
+  }
+}
+
+function showErr(msg) { const el = $('err'); el.textContent = msg; el.hidden = !msg; if (msg) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+
+async function submit(btn) {
+  showErr('');
+  if (!B && !ans.doctorName) return showErr('กรุณาเลือกหมอที่นวดให้ก่อนนะคะ');
+  if (!ans.doctor) return showErr('กรุณาให้ดาวหมอก่อนนะคะ (ข้อ 1)');
+  btn.disabled = true; btn.textContent = 'กำลังส่ง...';
+  try {
+    const answers = Object.assign({}, ans, { want: $('want').value, comment: $('comment').value, name: $('qrName') ? $('qrName').value : '' });
+    const res = await api({ action: 'feedbackSave', b: B, t: T, answers });
+    if (!res.success) {
+      if (res.done) return stateView('✅', 'ให้คะแนนไปแล้ว', 'ขอบคุณสำหรับความเห็นค่ะ');
+      if (res.expired) return stateView('⌛', 'ลิงก์หมดเวลาแล้ว', 'ขอบคุณที่สนใจค่ะ หากมีอะไรอยากบอก ทักแชท LINE ร้านได้เลยนะคะ');
+      throw new Error(res.error || 'ส่งไม่สำเร็จ');
+    }
+    const low = ans.doctor <= 3;
+    const review = res.reviewUrl ? `<a class="btn btn-primary btn-block" href="${esc(res.reviewUrl)}" target="_blank" rel="noopener">⭐ รีวิวร้านบน Google Maps</a>
+      <p>ถ้าชอบ ช่วยรีวิวให้ร้านด้วยนะคะ จะเป็นกำลังใจมาก ๆ 🙏</p>` : '';
+    stateView(low ? '🙏' : '💚', 'ขอบคุณสำหรับความเห็นค่ะ',
+      (low ? 'ขอโทษที่ครั้งนี้ยังไม่ประทับใจ ร้านจะนำไปปรับปรุงและอาจติดต่อกลับนะคะ' : 'ร้านจะนำไปพัฒนาให้ดียิ่งขึ้นค่ะ') +
+      (res.points ? ` · ได้รับ +${res.points} แต้มแล้ว 🎁` : ''), review);
+  } catch (err) {
+    showErr(err.message || 'ส่งไม่สำเร็จ กรุณาลองใหม่');
+    btn.disabled = false; btn.textContent = 'ส่งความเห็น';
+  }
+}
+
+(async function init() {
+  try {
+    const info = await api({ action: 'feedbackForm', b: B, t: T });
+    if (!info.success) return stateView('⚠️', 'เปิดหน้าให้คะแนนไม่ได้', info.error || 'ลิงก์ไม่ถูกต้อง');
+    if (info.done) return stateView('✅', 'ให้คะแนนไปแล้ว', 'ขอบคุณสำหรับความเห็นค่ะ');
+    if (info.expired) return stateView('⌛', 'ลิงก์หมดเวลาแล้ว', 'ขอบคุณที่สนใจค่ะ หากมีอะไรอยากบอก ทักแชท LINE ร้านได้เลยนะคะ');
+    renderForm(info);
+  } catch (e) {
+    stateView('⚠️', 'โหลดไม่สำเร็จ', 'กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง');
+  }
+})();
+</script>
+</body>
+</html>
