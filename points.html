@@ -140,7 +140,7 @@ const CONFIG = {
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const TYPE_LABEL = { earn:'ได้รับแต้ม', reverse:'หักคืน (ยกเลิก)', redeem:'ใช้แต้มแลกของรางวัล', redeem_cancel:'คืนแต้ม', adjust:'ปรับแต้ม', expire:'แต้มหมดอายุ' };
+const TYPE_LABEL = { earn:'ได้รับแต้ม', reverse:'หักคืน (ยกเลิก)', redeem:'ใช้แต้มแลกของรางวัล', redeem_cancel:'คืนแต้ม', adjust:'ปรับแต้ม', expire:'แต้มหมดอายุ', feedback:'ตอบแบบประเมิน' };
 
 function renderTerms(rate, goal, label, months){
   const t = [
