@@ -50,6 +50,8 @@
   .date-chip{flex-direction:column;align-items:center;justify-content:center;gap:0;min-height:64px;padding:var(--sp-2);text-align:center}
   .date-chip .d1{font-size:var(--fs-xs);color:var(--c-text-2)}
   .date-chip .d2{font-weight:700;font-size:var(--fs-lg);white-space:nowrap}
+  .date-chip .pm{font-size:10px;line-height:1;color:#fff;background:var(--c-gold);border-radius:var(--r-pill);padding:2px 6px;margin-top:2px}
+  .slot.ps{border-color:var(--c-gold)}
   .date-chip:has(input:checked){padding:calc(var(--sp-2) - 1px)}
   .date-chip:has(input:checked) .d1{color:var(--c-primary)}
   .other-date{margin-top:var(--sp-3)}
@@ -270,21 +272,41 @@ const SERVICE_MAP = { thai:"นวดไทย", thaioil:"นวดไทยอ�
 let SERVICES = [];           // [{id,name,durations:[{min,price}]}]
 const S = { service:null, dur:null, doctor:null, date:null, time:null };
 let PROMO = null;   // โปรที่มาจากหน้าโปรโมชั่น (?promo=รหัส) — ราคาจริงคิดฝั่งเซิร์ฟเวอร์
-function promoApplies(){
+function promoSvcOk(){
   if (!PROMO || !S.service || !S.dur) return false;
   if (PROMO.service && norm(PROMO.service) !== norm(S.service.name)) return false;
   if (PROMO.minutes && PROMO.minutes !== S.dur.min) return false;
   return true;
 }
+// วัน/เวลาที่โปรใช้ได้ (คอลัมน์ วัน / เวลา ในแท็บ โปรโมชั่น) — เซิร์ฟเวอร์ตรวจซ้ำตอนจอง
+function promoDayOk(iso){
+  if (!PROMO || !iso) return false;
+  if (PROMO.end && iso > PROMO.end) return false;
+  if (!PROMO.days || !PROMO.days.length) return true;
+  const [y, m, d] = iso.split('-').map(Number);
+  return PROMO.days.includes(new Date(y, m - 1, d).getDay());
+}
+function promoTimeOk(t){
+  if (!PROMO || !t) return false;
+  if (!PROMO.from || !PROMO.to) return true;
+  const x = toMin(t); return x >= toMin(PROMO.from) && x <= toMin(PROMO.to);
+}
+function promoWhen(){
+  return [PROMO.days && PROMO.days.length ? 'วัน' + PROMO.daysText : '', PROMO.from && PROMO.to ? 'เริ่มนวด ' + PROMO.from + '-' + PROMO.to + ' น.' : ''].filter(Boolean).join(' ');
+}
+function promoApplies(){ return promoSvcOk() && promoDayOk(S.date) && promoTimeOk(S.time); }
 function priceNow(){ return promoApplies() && PROMO.service && PROMO.price ? PROMO.price : (S.dur && S.dur.price) || 0; }
 function renderPromoBanner(){
   const b = $('promoBanner'); if (!PROMO){ b.hidden = true; return; }
   const ok = promoApplies();
-  const need = [PROMO.service, PROMO.minutes && durLabel(PROMO.minutes)].filter(Boolean).join(' ');
+  const when = promoWhen();
+  const need = !promoSvcOk() ? [PROMO.service, PROMO.minutes && durLabel(PROMO.minutes)].filter(Boolean).join(' ') + (when ? ' (' + when + ')' : '')
+    : !promoDayOk(S.date) ? (S.date ? 'วันที่ใช้โปรได้: ' : '') + (when || 'วันที่ใช้โปรได้')
+    : 'เวลาเริ่ม ' + PROMO.from + '-' + PROMO.to + ' น.';
   b.className = 'promo-bn' + (ok ? '' : ' off');
   b.innerHTML = `<span class="tag">โปร</span><div><strong>${esc(PROMO.title)}</strong><small>${
     ok ? (PROMO.price && PROMO.service ? 'ราคาโปร ' + baht(PROMO.price) + (PROMO.normal > PROMO.price ? ' (ปกติ ' + baht(PROMO.normal) + ')' : '') : 'ใช้โปรนี้กับการจองครั้งนี้')
-       : 'เลือก ' + esc(need) + ' เพื่อใช้โปรนี้'}</small></div>`;
+       : (S.date && promoSvcOk() && !promoDayOk(S.date) ? 'วันที่เลือกใช้โปรไม่ได้ (ราคาปกติ) · ' + esc(need) : 'เลือก ' + esc(need) + ' เพื่อใช้โปรนี้')}</small></div>`;
   b.hidden = false;
 }
 
@@ -443,10 +465,10 @@ function renderDates(){
   const today = new Date(); let html = '';
   for (let i = 0; i < 8; i++){
     const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
-    const iso = isoDate(d), closed = closedOn(iso);
+    const iso = isoDate(d), closed = closedOn(iso), pm = !closed && PROMO && promoDayOk(iso);
     html += `<label class="choice date-chip"><input type="radio" name="date" value="${iso}" ${S.date === iso ? 'checked' : ''} ${closed ? 'disabled' : ''}
       aria-label="${fmt2.format(d)}${closed ? ' (ร้านหยุด)' : ''}">
-      <span class="d1">${closed ? 'ร้านหยุด' : i === 0 ? 'วันนี้' : i === 1 ? 'พรุ่งนี้' : fmt1.format(d)}</span><span class="d2">${fmt2.format(d)}</span></label>`;
+      <span class="d1">${closed ? 'ร้านหยุด' : i === 0 ? 'วันนี้' : i === 1 ? 'พรุ่งนี้' : fmt1.format(d)}</span><span class="d2">${fmt2.format(d)}</span>${pm ? '<span class="pm">โปร</span>' : ''}</label>`;
   }
   $('dateList').innerHTML = html;
   $('otherDate').min = isoDate(today);
@@ -469,7 +491,8 @@ function renderSlots(){
     const off = closed || isFull;
     if (!off) free++; if (isFull) full++;
     if (off && S.time === t) S.time = null;
-    html += `<label class="slot"><input type="radio" name="time" value="${t}" ${off ? 'disabled' : ''} ${S.time === t ? 'checked' : ''}
+    const ps = !off && PROMO && promoSvcOk() && promoDayOk(S.date) && promoTimeOk(t);
+    html += `<label class="slot${ps ? ' ps' : ''}"><input type="radio" name="time" value="${t}" ${off ? 'disabled' : ''} ${S.time === t ? 'checked' : ''}
       aria-label="${t} น.${isFull ? ' (คิวเต็ม)' : closed ? ' (จองไม่ได้)' : ''}"><span class="ck" aria-hidden="true">✓</span>${t}</label>`;
   }
   $('slotList').innerHTML = html;
@@ -690,6 +713,7 @@ async function prefillFromMenu(){
       if (!PROMO) setStatus('', 'โปรโมชั่นนี้หมดเขตแล้ว — จองได้ในราคาปกติ');
     }catch(e){}
     renderPromoBanner();
+    if (PROMO) renderDates();
   }
   if (svcId || svcName){
     let idx = SERVICES.findIndex(s => s.id && s.id === svcId);
