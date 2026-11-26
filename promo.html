@@ -100,7 +100,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const baht = n => '฿' + Number(n).toLocaleString('th-TH');
 const thDate = iso => { const [y,m,d] = String(iso).split('-').map(Number); if(!y) return '';
   const mm = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'][m-1]; return `${d} ${mm} ${y+543}`; };
-const CACHE_KEY = 'zensai_promos_v1';
+const CACHE_KEY = 'zensai_promos_v2';
 
 function bookUrl(p){
   const q = new URLSearchParams({ svc_name: p.service });
@@ -149,6 +149,7 @@ function render(data){
       <div class="body">
         ${p.desc ? `<p class="desc">${esc(p.desc)}</p>` : ''}
         ${p.price ? `<div class="price"><b>${baht(p.price)}</b>${p.normal > p.price ? `<s>${baht(p.normal)}</s>` : ''}${save}</div>` : ''}
+        ${(p.days && p.days.length) || (p.from && p.to) ? `<div class="until"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>${esc([p.days && p.days.length ? 'เฉพาะวัน' + p.daysText : '', p.from && p.to ? 'เริ่มนวด ' + p.from + '-' + p.to + ' น.' : ''].filter(Boolean).join(' · '))}</div>` : ''}
         ${p.end ? `<div class="until"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>ถึงวันที่ ${thDate(p.end)}</div>` : ''}
         <a class="btn btn-primary" href="${p.service ? esc(bookUrl(p)) : CONFIG.BOOKING_URL}">จองโปรนี้</a>
       </div></article>`;
