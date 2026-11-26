@@ -271,7 +271,21 @@ const SERVICE_MAP = { thai:"นวดไทย", thaioil:"นวดไทยอ�
 /* ================== state ================== */
 let SERVICES = [];           // [{id,name,durations:[{min,price}]}]
 const S = { service:null, dur:null, doctor:null, date:null, time:null };
-let PROMO = null;   // โปรที่มาจากหน้าโปรโมชั่น (?promo=รหัส) — ราคาจริงคิดฝั่งเซิร์ฟเวอร์
+let PROMO = null;   // โปรที่ใช้กับการจองนี้ — ราคาจริงคิดฝั่งเซิร์ฟเวอร์
+let PROMO_FIXED = null, PROMOS = [];   // PROMO_FIXED = มาจากหน้าโปรโมชั่น (?promo=รหัส), PROMOS = โปรที่เปิดอยู่ทั้งหมด
+// ไม่ได้มาจากหน้าโปร: เลือกโปรให้อัตโนมัติตามบริการ/นาที/วัน/เวลาที่ลูกค้าเลือก (เฉพาะโปรที่ระบุบริการและราคา)
+function refreshPromo(){
+  const prev = PROMO;
+  if (PROMO_FIXED){ PROMO = PROMO_FIXED; }
+  else {
+    const cands = PROMOS.filter(p => p.service && p.price && S.service && S.dur && norm(p.service) === norm(S.service.name) && (!p.minutes || p.minutes === S.dur.min));
+    let pick = null;
+    for (const p of cands){ PROMO = p; if (promoDayOk(S.date) && promoTimeOk(S.time)){ pick = p; break; } }
+    if (!pick) for (const p of cands){ PROMO = p; if (promoDayOk(S.date)){ pick = p; break; } }
+    PROMO = pick || cands[0] || null;
+  }
+  if (prev !== PROMO) renderDates();
+}
 function promoSvcOk(){
   if (!PROMO || !S.service || !S.dur) return false;
   if (PROMO.service && norm(PROMO.service) !== norm(S.service.name)) return false;
@@ -474,6 +488,7 @@ function renderDates(){
   $('otherDate').min = isoDate(today);
 }
 function renderSlots(){
+  refreshPromo();
   const dur = S.dur ? S.dur.min : 60;
   const now = new Date(), isToday = S.date === isoDate(now);
   const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -508,6 +523,7 @@ function renderSlots(){
   updateBar();
 }
 function updateBar(){
+  refreshPromo();
   const s = S.service, d = S.dur;
   $('bbLabel').textContent = s ? [s.name, d && durLabel(d.min), S.time && (S.time + ' น.')].filter(Boolean).join(' · ') : 'ยังไม่ได้เลือกบริการ';
   const pr = priceNow();
@@ -705,16 +721,14 @@ async function prefillFromMenu(){
   const p = getMenuParams();
   const svcId = p.get('service'), svcName = p.get('svc_name'), durMin = Number(p.get('dur'));
   const promoId = p.get('promo');
+  const loadPromos = fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ action:'promos' }) })
+    .then(r => r.json()).then(d => { PROMOS = d.promos || []; }).catch(() => {});
   if (promoId){
-    try{
-      const r = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ action:'promos' }) });
-      const d = await r.json();
-      PROMO = (d.promos || []).find(x => x.id === promoId) || null;
-      if (!PROMO) setStatus('', 'โปรโมชั่นนี้หมดเขตแล้ว — จองได้ในราคาปกติ');
-    }catch(e){}
-    renderPromoBanner();
-    if (PROMO) renderDates();
+    await loadPromos;
+    PROMO_FIXED = PROMOS.find(x => x.id === promoId) || null;
+    if (!PROMO_FIXED) setStatus('', 'โปรโมชั่นนี้หมดเขตแล้ว — จองได้ในราคาปกติ');
   }
+  loadPromos.then(() => updateBar());
   if (svcId || svcName){
     let idx = SERVICES.findIndex(s => s.id && s.id === svcId);
     if (idx < 0) idx = SERVICES.findIndex(s => norm(s.name) === norm(svcName));
