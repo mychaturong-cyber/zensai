@@ -625,6 +625,7 @@ $('confirmBtn').addEventListener('click', async () => {
   if (!userLineId && typeof liff !== 'undefined'){
     try{ if (liff.isLoggedIn()){ const p = await liff.getProfile(); if (p && p.userId) userLineId = p.userId; } }catch(e){}
   }
+  const clientConfirm = await canClientSend();
   const durationVal = S.dur.min / 60;
   const name = $('customerName').value.trim();
   const phone = formatPhone(cleanPhone($('customerPhone').value));
@@ -641,7 +642,8 @@ $('confirmBtn').addEventListener('click', async () => {
     customerName: name,
     customerPhone: phone,
     customerInfo: name + " " + phone,
-    lineUserId: userLineId
+    lineUserId: userLineId,
+    clientConfirm: clientConfirm && !!userLineId
   };
 
   const controller = new AbortController();
@@ -656,6 +658,7 @@ $('confirmBtn').addEventListener('click', async () => {
       closeModal('reviewModal');
       $('doneRef').textContent = res.bookingId;
       $('doneSummary').innerHTML = summaryHTML();
+      if (res.lineSent === 'client') res.lineSent = await sendConfirmFromClient(res);
       $('doneLineNote').textContent =
         res.lineSent === true ? 'ร้านส่งใบนัดเข้าแชต LINE แล้ว'
         : res.lineSent === false ? (userLineId ? 'ส่งใบนัดเข้า LINE ไม่สำเร็จ กรุณาบันทึกเลขอ้างอิงนี้ไว้ (การจองบันทึกเรียบร้อยแล้ว)' : 'กรุณาบันทึกเลขอ้างอิงนี้ไว้')
@@ -689,6 +692,32 @@ $('confirmBtn').addEventListener('click', async () => {
     btn.disabled = false; btn.textContent = 'ยืนยันการจอง';
   }
 });
+// ใบนัด: ถ้าเปิดหน้าจองจากแชทร้าน ให้ส่งใบนัดเข้าแชทจากฝั่งลูกค้า (liff.sendMessages ไม่นับโควตาข้อความของร้าน)
+async function canClientSend(){
+  try{
+    if (typeof liff === 'undefined' || !liff.isInClient()) return false;
+    const ctx = liff.getContext();
+    if (!ctx || ctx.type !== 'utou') return false;
+    if (liff.permission && liff.permission.query){
+      const q = await liff.permission.query('chat_message.write');
+      if (q && q.state === 'unavailable') return false;
+    }
+    return true;
+  }catch(e){ return false; }
+}
+async function sendConfirmFromClient(res){
+  try{
+    if (!res.confirmFlex) throw new Error('no flex');
+    await liff.sendMessages([res.confirmFlex]);
+    return true;
+  }catch(e){
+    try{   // ส่งเองไม่ได้ (เช่น ลูกค้าไม่อนุญาต) -> ให้ร้านส่งแทน
+      const r = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ action:'confirmPush', bookingId: res.bookingId }) });
+      const d = await r.json();
+      return !!(d && d.success);
+    }catch(e2){ return false; }
+  }
+}
 function showBookingError(msg, network){
   const el = $('rvError');
   el.innerHTML = `<div><strong>จองไม่สำเร็จ:</strong> ${esc(msg)}<br>${network
